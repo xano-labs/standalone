@@ -89,7 +89,6 @@ docker \
   run \
   --name $CONTAINER \
   --rm \
-  -it \
   -p 0.0.0.0:$PORT:80 \
   --pull $PULL \
   -e "XANO_INSTANCE=$NAME" \
@@ -97,15 +96,3 @@ docker \
   -v $VOLUME:/xano/storage \
   $IMAGE:$TAG
 
-# docker \
-# run \
-# --name $NAME \
-# --rm \
-# -it \
-# -p 4200:80 \
-# --pull always \
-# -e "XANO_INSTANCE=$NAME" \
-# -e "XANO_MASTER=app.dev.xano.com" \
-# -v $VOLUME:/xano/storage \
-# --entrypoint=/bin/sh \
-# us.gcr.io/xano-252315/cloud-client/standalone:latest
