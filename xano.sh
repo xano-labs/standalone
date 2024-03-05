@@ -7,7 +7,11 @@ DOMAIN=app.xano.com
 IMAGE=gcr.io/xano-registry/standalone
 TAG=latest
 PULL=missing
-DAEMON=""
+DAEMON=0
+SHELL=0
+MODE=""
+ENTRYPOINT=""
+NOTICE=1
 
 while :; do
   case $1 in
@@ -21,23 +25,34 @@ while :; do
   -name)
     shift
     NAME=$1
+    NOTICE=0
     ;;
   -token)
     shift
     TOKEN=$1
+    NOTICE=0
     ;;
   -domain)
     shift
     DOMAIN=$1
     ;;
   -daemon)
-    DAEMON="-d"
+    DAEMON=1
+    MODE="-d"
+    ;;
+  -shell)
+    SHELL=1
+    MODE="-it"
+    ENTRYPOINT="--entrypoint=/bin/sh"
+    NOTICE=0
     ;;
   esac
   shift
 done
 
-if [ "$NAME" = "" ] || [ "$TOKEN" = "" ]; then
+
+
+if [ "$NOTICE" = "1" ]; then
   echo "Xano Standalone Edition"
   echo ""
   echo "Required parameters:"
@@ -50,6 +65,12 @@ if [ "$NAME" = "" ] || [ "$TOKEN" = "" ]; then
   echo " -tag: the docker image tag, default: latest"
   echo " -index: the index for parallel instances, default: 0"
   echo " -daemon: run in the background"
+  echo " -shell: run the shell instead of normal entrypoint"
+  exit
+fi
+
+if [ "$SHELL" = 1 ] && [ "$DAEMON" = 1 ]; then
+  echo "Run either as shell or daemon."
   exit
 fi
 
@@ -98,8 +119,8 @@ docker \
   run \
   --name $CONTAINER \
   --rm \
-  -it \
-  $DAEMON \
+  $MODE \
+  $ENTRYPOINT \
   -p 0.0.0.0:$PORT:80 \
   --pull $PULL \
   -e "XANO_INSTANCE=$NAME" \
