@@ -7,7 +7,6 @@ DOMAIN=app.xano.com
 IMAGE=gcr.io/xano-registry/standalone
 TAG=latest
 PULL=missing
-INDEX=0
 DAEMON=""
 
 while :; do
@@ -30,10 +29,6 @@ while :; do
   -domain)
     shift
     DOMAIN=$1
-    ;;
-  -index)
-    shift
-    INDEX=$1
     ;;
   -daemon)
     DAEMON="-d"
@@ -71,7 +66,7 @@ if [ "$docker" = "" ]; then
   exit
 fi
 
-CONTAINER="xano-"$NAME"-"$INDEX
+CONTAINER="xano-"$NAME
 
 VOLUME=$CONTAINER
 
@@ -92,7 +87,10 @@ ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
 ret=$?
 if [ $ret -eq 0 ]; then
   echo "Existing container is already running."
-  echo "Try using the -index param."
+    echo "Is this intentional? If not, run the following command to remove it:"
+    echo ""
+    echo "  docker kill $CONTAINER"
+    echo ""
   exit
 fi
 
@@ -100,6 +98,7 @@ docker \
   run \
   --name $CONTAINER \
   --rm \
+  -it \
   $DAEMON \
   -p 0.0.0.0:$PORT:80 \
   --pull $PULL \
