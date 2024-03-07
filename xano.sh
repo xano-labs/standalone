@@ -1,5 +1,6 @@
 #!/bin/bash
 
+VERSION=1.0.3
 XANO_PORT=${XANO_PORT:-4200}
 XANO_INSTANCE="$XANO_INSTANCE"
 XANO_TOKEN="$XANO_TOKEN"
@@ -19,6 +20,7 @@ CONNECT=0
 VARS=0
 RMVOL=0
 STOP=0
+CREDENTIALS=0
 
 while :; do
   case $1 in
@@ -31,6 +33,13 @@ while :; do
     ;;
   -rmvol)
     RMVOL=1
+    ;;
+  -credentials)
+    CREDENTIALS=1
+    ;;
+  -ver)
+    echo $VERSION
+    exit
     ;;
   -stop)
     STOP=1
@@ -119,6 +128,8 @@ if [ "$NOTICE" = "1" ]; then
   echo " -daemon: run in the background"
   echo " -shell: run a shell instead of normal entrypoint (this requires no active container)"
   echo " -connect: run a shell into the existing container"
+  echo " -credentials: retrieve the initial credentials"
+  echo " -ver: display the shell script version"
   echo " -help: display this menu"
   exit 1
 fi
@@ -166,6 +177,26 @@ if [ "$STOP" = "1" ]; then
     echo "daemon not running"
   fi
   exit
+fi
+
+if [ "$CREDENTIALS" = "1" ]; then
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    echo "INITIAL CREDENTIALS"
+    echo ""
+    echo "Note: These are no longer valid after first login."
+    echo ""
+    echo "Email:    "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.email')
+    echo "Password: "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.password')
+    echo "Origin:   http://localhost:$XANO_PORT"
+    echo ""
+    exit 1
+  else
+    echo "There is no existing container running."
+    echo ""
+    exit 1
+  fi
 fi
 
 if [ "$CONNECT" = "0" ]; then

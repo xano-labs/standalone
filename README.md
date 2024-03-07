@@ -40,6 +40,8 @@ Optional parameters:
  -daemon: run in the background
  -shell: run a shell instead of normal entrypoint (this requires no active container)
  -connect: run a shell into the existing container
+ -credentials: retrieve the initial credentials
+ -ver: display the shell script version
  -help: display this menu
 ```
 
@@ -130,3 +132,10 @@ Yes. If you want to start with a fresh volume, then run the script with the `-rm
 ## I started the daemon, but now I want to stop it. How do I do that?
 
 Run the script with the `-stop` parameter. This will stop the daemon.
+
+## I have Xano standalone running, but how do I login?
+
+The initial credentials should have been emailed to the license owner. If you don't have them, you can reach out to your account representative.
+
+You can also retrieve them with the `-credentials` parameter.
+
