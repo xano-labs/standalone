@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.3
+VERSION=1.0.4
 XANO_PORT=${XANO_PORT:-4200}
 XANO_INSTANCE="$XANO_INSTANCE"
 XANO_TOKEN="$XANO_TOKEN"
@@ -256,4 +256,11 @@ else
     -e "XANO_MASTER=$XANO_DOMAIN" \
     $VOLUME \
     $IMAGE:$TAG
+
+  if [ "$DAEMON" = "1" ]; then
+    echo ""
+    echo "Xano Standalone is now running in daemon mode."
+    echo "If this is the first time running, then use -credentials to get your initial login credentials."
+    echo ""
+  fi
 fi

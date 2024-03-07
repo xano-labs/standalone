@@ -6,6 +6,15 @@ Xano Standalone is a self hosted version of Xano that is completely isolated to 
 
 This version of Xano is not designed to be a scalable solution and has made many tradeoffs in term of flexibility of getting started with a POC. Once a POC is successful, it is common to upgrade this license into a scalable Enterprise solution, which can be setup within a cloud or on-premise environment. 
 
+## TL;DR - I'm ready to get started
+
+1. Get your standalone license from your account representive or contact sales@xano.com for more information
+2. Clone this repository - `git clone git@gitlab.com:xano/standalone.git`
+3. Rename the `placeholder.vars` file to your own file and update the variables inside based on your license - i.e. `custom.vars`
+4. Startup the standalone instance with the following command: `./xano.sh -vars custom.vars -daemon`
+5. Retrieve your initial credentials to login the first time with the following command: `./xano.sh -vars custom.vars -credentials`
+
+
 ## How do I get a license?
 
 If you don't have a license, then please contact sales@xano.com for more information.
@@ -75,17 +84,17 @@ XANO_PORT=4200
 
 ## How do I create and use my own variables file?
 
-There is a `placeholder.vars` file in the `secret` directory of this repository. You can copy that file and rename it. Then proceed to update the variables to make them relavent to your environment.
+There is a `placeholder.vars` file in this repository. Go ahead and rename it, then proceed to update the variables to make them relavent to your environment.
 
 See the following series of commands as an example:
 
 ```shell
-~/git/standalone$ cp secret/placeholder.vars secret/me.vars
+~/git/standalone$ mv placeholder.vars me.vars
 
-# use an editor to edit secret/me.vars
+# use an editor to edit me.vars
 
 # run the shell script with this new file after you are done editing it 
-~/git/standalone$ ./xano.sh -vars secret/me.vars
+~/git/standalone$ ./xano.sh -vars me.vars
 ```
 
 ## Does Xano Standalone require an internet connection?
