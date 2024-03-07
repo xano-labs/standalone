@@ -123,9 +123,9 @@ if [ "$NOTICE" = "1" ]; then
   echo " -tag: the docker image tag, default: latest"
   echo " -rmvol: remove the volume, if it exists"
   echo " -nopull: skip pulling the latest docker image"
-  echo " -stop: stop the daemon, if it is running"
   echo " -incognito: skip creating a volume, so everything is cleared once the container exits"
   echo " -daemon: run in the background"
+  echo " -stop: stop the daemon, if it is running"
   echo " -shell: run a shell instead of normal entrypoint (this requires no active container)"
   echo " -connect: run a shell into the existing container"
   echo " -credentials: retrieve the initial credentials"
@@ -165,6 +165,16 @@ if [ "$RMVOL" = "1" ]; then
     echo "volume removed"
   fi
   exit
+fi
+
+if [ "$DAEMON" = "1" ]; then
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    docker kill $CONTAINER > /dev/null
+    echo "restarting daemon"
+    sleep 1
+  fi
 fi
 
 if [ "$STOP" = "1" ]; then
