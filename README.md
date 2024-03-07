@@ -28,11 +28,13 @@ Required parameters:
     env: XANO_TOKEN
 
 Optional parameters:
+ -vars: a variable file
  -port: web port, default: 4200
     env: XANO_PORT
  -domain: the xano master domain, default: app.xano.com
     env: XANO_DOMAIN
  -tag: the docker image tag, default: latest
+ -rmvol: remove the volume if it exists
  -nopull: skip pulling the latest docker image
  -incognito: skip creating a volume, so everything is cleared once the container exits
  -daemon: run in the background
@@ -41,20 +43,18 @@ Optional parameters:
  -help: display this menu
 ```
 
+## Variable Config File
+
+You can leverage the `-vars` parameter to reference multiple variables in a single command.
+
 ## Environment Variables
 
-The following environment variables are recommended to make it easier to use the Xano Standalone edition.
+The prefered method of using variables is via the `-vars` parameter, but you can use individual environment variables as well if you prefer this method.
 
-- export XANO_DOMAIN=app.xano.com
-- export XANO_PORT=4200
 - export XANO_INSTANCE=CHANGE_ME
 - export XANO_TOKEN=CHANGE_ME
-
-These variables are also located in env.sh which can be downloaded, customized, and then loaded into your environment via the following command.
-
-```shell
-source env.sh
-```
+- export XANO_DOMAIN=app.xano.com
+- export XANO_PORT=4201
 
 You can then validate that the environment variables have been setup properly using the following command:
 
@@ -63,29 +63,70 @@ printenv | grep XANO_
 ```
 If you see something similiar to this below, then everything is setup properly.
 ```shell
-XANO_TOKEN=CHANGE_ME
-XANO_PORT=4200
 XANO_INSTANCE=CHANGE_ME
+XANO_TOKEN=CHANGE_ME
 XANO_DOMAIN=app.xano.com
+XANO_PORT=4200
 ```
 
 # Frequently Asked Questions
 
+## How do I create and use my own variables file?
+
+There is a `placeholder.vars` file in the `secret` directory of this repository. You can copy that file and rename it. Then proceed to update the variables to make them relavent to your environment.
+
+See the following series of commands as an example:
+
+```shell
+~/git/standalone$ cp secret/placeholder.vars secret/me.vars
+
+# use an editor to edit secret/me.vars
+
+# run the shell script with this new file after you are done editing it 
+~/git/standalone$ ./xano.sh -vars secret/me.vars
+```
+
 ## Does Xano Standalone require an internet connection?
 
-- It only requires an internet connection to fetch the initial docker image and acquire a license.
-- If a license has an expiration, it will not contact the license server again until the license is expired.
-- It is also important to specify the `-nopull` parameter, so as to not request the latest version of Xano Standalone. Otherwise, if using the "latest" tag, it will check to see if there is an update.
+It only requires an internet connection to fetch the initial docker image and acquire a license.
+
+If a license has an expiration, it will not contact the license server again until the license is expired.
+
+It is also important to specify the `-nopull` parameter, so as to not request the latest version of Xano Standalone. Otherwise, if using the "latest" tag, it will check to see if there is an update.
 
 ## Is there a way to run Xano Standalone in the background?
 
-- Yes. You can use the `-daemon` parameter to run it in the background.
+Yes. You can use the `-daemon` parameter to run it in the background.
 
 ## Is there a way to enter the container and view logs?
 
-- Yes. If you want to explore the container without it currently running, then use the `-shell` parameter. This requires no active container running.
-- If you want to explore the container while it is running, then use the `-connect` parameter.
-- Commonly used directories would be the following:
+Yes. There are two methods you can use to explore the container.
+
+If you want to explore the container without it currently running, then use the `-shell` parameter. This requires no active container running.
+
+If you want to explore the container while it is running, then use the `-connect` parameter.
+
+Commonly used directories would be the following:
   - `/tmp`
   - `/xano/storage/tmp`
   - `/xano/storage/postgresql`
+
+## Is storage persistent?
+
+Yes. A docker volume is created which allows the data to persist between running the standalone edition. 
+
+If you want to use temporary storage, try using the `-incognito` parameter.
+
+## Can I use temporary storage?
+
+Yes. You can do this using the `-incognito` parameter.
+
+This means that the storage is deleted as soon as the container ends.
+
+## I would like to start over. Can I clear out my volume?
+
+Yes. If you want to start with a fresh volume, then run the script with the `-rmvol` parameter.
+
+## I started the daemon, but now I want to stop it. How do I do that?
+
+Run the script with the `-stop` parameter. This will stop the daemon.

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-PORT=${XANO_PORT:-4200}
-INSTANCE="$XANO_INSTANCE"
-TOKEN="$XANO_TOKEN"
-DOMAIN=${XANO_DOMAIN:-app.xano.com}
+XANO_PORT=${XANO_PORT:-4200}
+XANO_INSTANCE="$XANO_INSTANCE"
+XANO_TOKEN="$XANO_TOKEN"
+XANO_DOMAIN=${XANO_DOMAIN:-app.xano.com}
 IMAGE=gcr.io/xano-registry/standalone
 TAG=latest
 PULL=missing
@@ -16,6 +16,9 @@ NOTICE=1
 INCOGNITO=0
 VOLUME=""
 CONNECT=0
+VARS=0
+RMVOL=0
+STOP=0
 
 while :; do
   case $1 in
@@ -25,6 +28,16 @@ while :; do
   -port)
     shift
     PORT=$1
+    ;;
+  -rmvol)
+    RMVOL=1
+    ;;
+  -stop)
+    STOP=1
+    ;;
+  -vars)
+    shift
+    VARS=$1
     ;;
   -instance)
     shift
@@ -67,8 +80,18 @@ while :; do
   shift
 done
 
+if [ "$VARS" != "0" ]; then
+  if [ ! -f "$VARS" ]; then
+    echo "Vars file does not exist."
+    echo ""
+    exit 1
+  fi
+
+  source $VARS
+fi
+
 if [ "$NOTICE" = "1" ]; then
-  if [ "$INSTANCE" != "" ] || [ "$TOKEN" != "" ]; then
+  if [ "$XANO_INSTANCE" != "" ] && [ "$XANO_TOKEN" != "" ]; then
     NOTICE=0
   fi
 fi
@@ -83,23 +106,26 @@ if [ "$NOTICE" = "1" ]; then
   echo "    env: XANO_TOKEN"
   echo ""
   echo "Optional parameters:"
+  echo " -vars: a variable file"
   echo " -port: web port, default: 4200"
   echo "    env: XANO_PORT"
   echo " -domain: the xano master domain, default: app.xano.com"
   echo "    env: XANO_DOMAIN"
   echo " -tag: the docker image tag, default: latest"
+  echo " -rmvol: remove the volume, if it exists"
   echo " -nopull: skip pulling the latest docker image"
+  echo " -stop: stop the daemon, if it is running"
   echo " -incognito: skip creating a volume, so everything is cleared once the container exits"
   echo " -daemon: run in the background"
   echo " -shell: run a shell instead of normal entrypoint (this requires no active container)"
   echo " -connect: run a shell into the existing container"
   echo " -help: display this menu"
-  exit
+  exit 1
 fi
 
 if [ "$SHELL" = 1 ] && [ "$DAEMON" = 1 ]; then
   echo "Run either as shell or daemon."
-  exit
+  exit 1
 fi
 
 if [ "$TAG" = "latest" ] && [ "$NOPULL" = "0" ]; then
@@ -115,7 +141,32 @@ if [ "$docker" = "" ]; then
   exit
 fi
 
-CONTAINER="xano-"$INSTANCE
+CONTAINER="xano-"$XANO_INSTANCE
+
+if [ "$RMVOL" = "1" ]; then
+  ret=$(docker volume inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+
+  if [ $ret -ne 0 ]; then
+    echo "volume already removed"
+  else
+    docker volume rm $CONTAINER 2>/dev/null > /dev/null
+    echo "volume removed"
+  fi
+  exit
+fi
+
+if [ "$STOP" = "1" ]; then
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    docker kill $CONTAINER > /dev/null
+    echo "daemon stopped"
+  else
+    echo "daemon not running"
+  fi
+  exit
+fi
 
 if [ "$CONNECT" = "0" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
@@ -126,7 +177,7 @@ if [ "$CONNECT" = "0" ]; then
     echo ""
     echo "  docker kill $CONTAINER"
     echo ""
-    exit
+    exit 1
   fi
 else
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
@@ -134,8 +185,24 @@ else
   if [ $ret -eq 1 ]; then
     echo "There is no existing container running."
     echo ""
-    exit
+    exit 1
   fi
+fi
+
+if [ "$INCOGNITO" = "0" ]; then
+  ret=$(docker volume inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+
+  if [ $ret -ne 0 ]; then
+    echo "creating docker volume"
+    docker volume create $CONTAINER 2>&1 >/dev/null
+    ret=$?
+    if [ $ret -ne 0 ]; then
+      echo "unable to create volume"
+      exit
+    fi
+  fi
+  VOLUME="-v $CONTAINER:/xano/storage"
 fi
 
 if [ "$CONNECT" = "1" ]; then
@@ -151,11 +218,11 @@ else
     --rm \
     $MODE \
     $ENTRYPOINT \
-    -p 0.0.0.0:$PORT:80 \
+    -p 0.0.0.0:$XANO_PORT:80 \
     --pull $PULL \
-    -e "XANO_INSTANCE=$INSTANCE" \
-    -e "XANO_TOKEN=$TOKEN" \
-    -e "XANO_MASTER=$DOMAIN" \
+    -e "XANO_INSTANCE=$XANO_INSTANCE" \
+    -e "XANO_TOKEN=$XANO_TOKEN" \
+    -e "XANO_MASTER=$XANO_DOMAIN" \
     $VOLUME \
     $IMAGE:$TAG
 fi
