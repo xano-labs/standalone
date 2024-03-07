@@ -1,4 +1,4 @@
-# Xano Standalone
+# Xano Standalone 1.0.4
 
 ## What is Xano Standalone?
 
