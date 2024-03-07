@@ -21,7 +21,17 @@ If you don't have a license, then please contact sales@xano.com for more informa
 
 ## Running Xano Standalone
 
-This can be done by downloading and running xano.sh, or it can be done on the fly using curl.
+This can be done by cloning this repository and running xano.sh.
+
+```shell
+git clone git@gitlab.com:xano/standalone.git
+cd standalone
+
+./xano.sh
+```
+
+
+or... it can be done on the fly using curl.
 
 ```shell
 curl -s 'https://gitlab.com/xano/standalone/-/raw/main/xano.sh' | bash -s --
