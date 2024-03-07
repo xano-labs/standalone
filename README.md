@@ -1,4 +1,4 @@
-# Xano Standalone 1.0.4
+# Xano Standalone 1.0.5
 
 ## What is Xano Standalone?
 
@@ -11,9 +11,7 @@ This version of Xano is not designed to be a scalable solution and has made many
 1. Get your standalone license from your account representive or contact sales@xano.com for more information
 2. Clone this repository - `git clone git@gitlab.com:xano/standalone.git`
 3. Rename the `placeholder.vars` file to your own file and update the variables inside based on your license - i.e. `custom.vars`
-4. Startup the standalone instance with the following command: `./xano.sh -vars custom.vars -daemon`
-5. Retrieve your initial credentials to login the first time with the following command: `./xano.sh -vars custom.vars -credentials`
-
+4. Startup the standalone instance with the following command: `./xano.sh -vars custom.vars`
 
 ## How do I get a license?
 

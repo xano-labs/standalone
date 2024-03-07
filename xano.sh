@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.4
+VERSION=1.0.5
 XANO_PORT=${XANO_PORT:-4200}
 XANO_INSTANCE="$XANO_INSTANCE"
 XANO_TOKEN="$XANO_TOKEN"
@@ -9,9 +9,9 @@ IMAGE=gcr.io/xano-registry/standalone
 TAG=latest
 PULL=missing
 NOPULL=0
-DAEMON=0
+DAEMON=1
 SHELL=0
-MODE=""
+MODE="-d"
 ENTRYPOINT=""
 NOTICE=1
 INCOGNITO=0
@@ -60,9 +60,9 @@ while :; do
     shift
     DOMAIN=$1
     ;;
-  -daemon)
-    DAEMON=1
-    MODE="-d"
+  -foreground)
+    DAEMON=0
+    MODE=""
     ;;
   -nopull)
     NOPULL=1
@@ -124,7 +124,7 @@ if [ "$NOTICE" = "1" ]; then
   echo " -rmvol: remove the volume, if it exists"
   echo " -nopull: skip pulling the latest docker image"
   echo " -incognito: skip creating a volume, so everything is cleared once the container exits"
-  echo " -daemon: run in the background"
+  echo " -foreground: run in the foreground instead of as a daemon"
   echo " -stop: stop the daemon, if it is running"
   echo " -shell: run a shell instead of normal entrypoint (this requires no active container)"
   echo " -connect: run a shell into the existing container"
@@ -270,7 +270,15 @@ else
   if [ "$DAEMON" = "1" ]; then
     echo ""
     echo "Xano Standalone is now running in daemon mode."
-    echo "If this is the first time running, then use -credentials to get your initial login credentials."
+    echo ""
+    echo "INITIAL CREDENTIALS"
+    echo ""
+    echo "Note: These are no longer valid after first login."
+    echo ""
+    echo "Email:    "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.email')
+    echo "Password: "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.password')
+    echo "Origin:   http://localhost:$XANO_PORT"
+
     echo ""
   fi
 fi
