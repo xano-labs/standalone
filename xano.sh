@@ -78,6 +78,7 @@ while :; do
     ;;
   -connect)
     CONNECT=1
+    DAEMON=0
     VERB="exec"
     ;;
   -help)
@@ -155,6 +156,14 @@ fi
 CONTAINER="xano-"$XANO_INSTANCE
 
 if [ "$RMVOL" = "1" ]; then
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    docker stop -t 3 $CONTAINER >/dev/null
+    sleep 1
+    docker ps
+  fi
+
   ret=$(docker volume inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
 
@@ -171,7 +180,7 @@ if [ "$DAEMON" = "1" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
   if [ $ret -eq 0 ]; then
-    docker kill $CONTAINER >/dev/null
+    docker stop -t 3 $CONTAINER >/dev/null
     echo "restarting daemon"
     sleep 1
   fi
@@ -181,8 +190,9 @@ if [ "$STOP" = "1" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
   if [ $ret -eq 0 ]; then
-    docker kill $CONTAINER >/dev/null
+    docker stop -t 3 $CONTAINER >/dev/null
     echo "daemon stopped"
+    sleep 1
   else
     echo "daemon not running"
   fi
@@ -223,7 +233,7 @@ if [ "$CONNECT" = "0" ]; then
 else
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
-  if [ $ret -eq 1 ]; then
+  if [ $ret -ne 0 ]; then
     echo "There is no existing container running."
     echo ""
     exit 1
@@ -269,6 +279,7 @@ else
     $IMAGE:$TAG
 
   if [ "$DAEMON" = "1" ]; then
+    sleep 1
     docker \
       exec \
       $CONTAINER \
