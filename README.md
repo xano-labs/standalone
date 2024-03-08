@@ -10,8 +10,8 @@ This version of Xano is not designed to be a scalable solution and has made many
 
 1. Get your standalone license from your account representive or contact sales@xano.com for more information
 2. Clone this repository - `git clone git@gitlab.com:xano/standalone.git`
-3. Rename the `placeholder.vars` file to your own file and update the variables inside based on your license - i.e. `custom.vars`
-4. Startup the standalone instance with the following command: `./xano.sh -vars custom.vars`
+3. Edit `settings.vars` and update the variables inside based on your license
+4. Startup the standalone instance with the following command: `./xano.sh -vars settings.vars`
 
 ## How do I get a license?
 
@@ -88,17 +88,16 @@ XANO_PORT=4201
 
 ## How do I create and use my own variables file?
 
-There is a `placeholder.vars` file in this repository. Go ahead and rename it, then proceed to update the variables to make them relavent to your environment.
+There is a `settings.vars` file in this repository. Edit this with your own variables for your license.
+
+If you have more than one license, then copy and rename this file for each license.
 
 See the following series of commands as an example:
 
 ```shell
-~/git/standalone$ mv placeholder.vars me.vars
+# use an editor to edit settings.vars
 
-# use an editor to edit me.vars
-
-# run the shell script with this new file after you are done editing it 
-~/git/standalone$ ./xano.sh -vars me.vars
+~/git/standalone$ ./xano.sh -vars settings.vars
 ```
 
 ## Does Xano Standalone require an internet connection?
