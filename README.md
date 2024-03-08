@@ -1,4 +1,4 @@
-# Xano Standalone 1.0.6
+# Xano Standalone 1.0.7
 
 ## What is Xano Standalone?
 
@@ -39,17 +39,15 @@ curl -s 'https://gitlab.com/xano/standalone/-/raw/main/xano.sh' | bash -s --
 Xano Standalone Edition
 
 Required parameters:
- -instance: xano instance name, e.g. x123-abcd-1234
-    env: XANO_INSTANCE
- -token: your metadata api token - env: XANO_TOKEN
-    env: XANO_TOKEN
+ -lic: the xano license, e.g. d4e7aa6c-cdbc-40e4...
+    env: XANO_LICENSE
 
 Optional parameters:
  -vars: a variable file
  -port: web port, default: 4200
     env: XANO_PORT
- -domain: the xano master domain, default: app.xano.com
-    env: XANO_DOMAIN
+ -origin: the xano master origin, default: https://app.xano.com
+    env: XANO_ORIGIN
  -tag: the docker image tag, default: latest
  -rmvol: remove the volume if it exists
  -nopull: skip pulling the latest docker image
@@ -70,9 +68,8 @@ You can leverage the `-vars` parameter to reference multiple variables in a sing
 
 The prefered method of using variables is via the `-vars` parameter, but you can use individual environment variables as well if you prefer this method.
 
-- export XANO_INSTANCE=CHANGE_ME
-- export XANO_TOKEN=CHANGE_ME
-- export XANO_DOMAIN=app.xano.com
+- export XANO_LICENSE=CHANGE_ME
+- export XANO_ORIGIN=https://app.xano.com
 - export XANO_PORT=4201
 
 You can then validate that the environment variables have been setup properly using the following command:
@@ -82,10 +79,9 @@ printenv | grep XANO_
 ```
 If you see something similiar to this below, then everything is setup properly.
 ```shell
-XANO_INSTANCE=CHANGE_ME
-XANO_TOKEN=CHANGE_ME
-XANO_DOMAIN=app.xano.com
-XANO_PORT=4200
+XANO_LICENSE=CHANGE_ME
+XANO_ORIGIN=https://app.xano.com
+XANO_PORT=4201
 ```
 
 # Frequently Asked Questions

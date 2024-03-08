@@ -1,10 +1,9 @@
 #!/bin/bash
 
-VERSION=1.0.6
+VERSION=1.0.7
 XANO_PORT=${XANO_PORT:-4200}
-XANO_INSTANCE="$XANO_INSTANCE"
-XANO_TOKEN="$XANO_TOKEN"
-XANO_DOMAIN=${XANO_DOMAIN:-app.xano.com}
+XANO_LICENSE="$XANO_LICENSE"
+XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
 IMAGE=gcr.io/xano-registry/standalone
 TAG=latest
 PULL=missing
@@ -48,17 +47,13 @@ while :; do
     shift
     VARS=$1
     ;;
-  -instance)
+  -lic)
     shift
-    INSTANCE=$1
+    XANO_LICENSE=$1
     ;;
-  -token)
+  -origin)
     shift
-    TOKEN=$1
-    ;;
-  -domain)
-    shift
-    DOMAIN=$1
+    ORIGIN=$1
     ;;
   -foreground)
     DAEMON=0
@@ -101,26 +96,24 @@ if [ "$VARS" != "0" ]; then
 fi
 
 if [ "$NOTICE" = "1" ]; then
-  if [ "$XANO_INSTANCE" != "" ] && [ "$XANO_TOKEN" != "" ]; then
+  if [ "$XANO_LICENSE" != "" ]; then
     NOTICE=0
   fi
 fi
 
 if [ "$NOTICE" = "1" ]; then
-  echo "Xano Standalone Edition"
+  echo "Xano Standalone Edition $VERSION"
   echo ""
   echo "Required parameters:"
-  echo " -instance: xano instance name, e.g. x123-abcd-1234"
-  echo "    env: XANO_INSTANCE"
-  echo " -token: your metadata api token - env: XANO_TOKEN"
-  echo "    env: XANO_TOKEN"
+  echo " -lic: the xano license, e.g. d4e7aa6c-cdbc-40e4..."
+  echo "    env: XANO_LICENSE"
   echo ""
   echo "Optional parameters:"
   echo " -vars: a variable file"
   echo " -port: web port, default: 4200"
   echo "    env: XANO_PORT"
-  echo " -domain: the xano master domain, default: app.xano.com"
-  echo "    env: XANO_DOMAIN"
+  echo " -origin: the xano master origin, default: https://app.xano.com"
+  echo "    env: XANO_ORIGIN"
   echo " -tag: the docker image tag, default: latest"
   echo " -rmvol: remove the volume, if it exists"
   echo " -nopull: skip pulling the latest docker image"
@@ -153,7 +146,7 @@ if [ "$docker" = "" ]; then
   exit
 fi
 
-CONTAINER="xano-"$XANO_INSTANCE
+CONTAINER="xano-"$XANO_LICENSE
 
 if [ "$RMVOL" = "1" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
@@ -271,9 +264,8 @@ else
     $ENTRYPOINT \
     -p 0.0.0.0:$XANO_PORT:80 \
     --pull $PULL \
-    -e "XANO_INSTANCE=$XANO_INSTANCE" \
-    -e "XANO_TOKEN=$XANO_TOKEN" \
-    -e "XANO_MASTER=$XANO_DOMAIN" \
+    -e "XANO_LICENSE=$XANO_LICENSE" \
+    -e "XANO_ORIGIN=$XANO_ORIGIN" \
     -e "XANO_PORT=$XANO_PORT" \
     $VOLUME \
     $IMAGE:$TAG
