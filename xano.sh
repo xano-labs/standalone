@@ -161,7 +161,7 @@ if [ "$RMVOL" = "1" ]; then
   if [ $ret -ne 0 ]; then
     echo "volume already removed"
   else
-    docker volume rm $CONTAINER 2>/dev/null > /dev/null
+    docker volume rm $CONTAINER 2>/dev/null >/dev/null
     echo "volume removed"
   fi
   exit
@@ -171,7 +171,7 @@ if [ "$DAEMON" = "1" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
   if [ $ret -eq 0 ]; then
-    docker kill $CONTAINER > /dev/null
+    docker kill $CONTAINER >/dev/null
     echo "restarting daemon"
     sleep 1
   fi
@@ -181,7 +181,7 @@ if [ "$STOP" = "1" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
   if [ $ret -eq 0 ]; then
-    docker kill $CONTAINER > /dev/null
+    docker kill $CONTAINER >/dev/null
     echo "daemon stopped"
   else
     echo "daemon not running"
@@ -264,21 +264,14 @@ else
     -e "XANO_INSTANCE=$XANO_INSTANCE" \
     -e "XANO_TOKEN=$XANO_TOKEN" \
     -e "XANO_MASTER=$XANO_DOMAIN" \
+    -e "XANO_PORT=$XANO_PORT" \
     $VOLUME \
     $IMAGE:$TAG
 
   if [ "$DAEMON" = "1" ]; then
-    echo ""
-    echo "Xano Standalone is now running in daemon mode."
-    echo ""
-    echo "INITIAL CREDENTIALS"
-    echo ""
-    echo "Note: These are no longer valid after first login."
-    echo ""
-    echo "Email:    "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.email')
-    echo "Password: "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.password')
-    echo "Origin:   http://localhost:$XANO_PORT"
-
-    echo ""
+    docker \
+      exec \
+      $CONTAINER \
+      php /xano/bin/tools/standaloneReady.php
   fi
 fi
