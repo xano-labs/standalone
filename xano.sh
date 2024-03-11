@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.7
+VERSION=1.0.8
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -8,7 +8,7 @@ IMAGE=gcr.io/xano-registry/standalone
 TAG=latest
 PULL=missing
 NOPULL=0
-DAEMON=1
+DAEMON=0
 SHELL=0
 MODE="-d"
 ENTRYPOINT=""
@@ -16,9 +16,10 @@ NOTICE=1
 INCOGNITO=0
 VOLUME=""
 CONNECT=0
-VARS=0
+VARS=./settings.vars
 RMVOL=0
 STOP=0
+HELP=0
 CREDENTIALS=0
 
 while :; do
@@ -32,16 +33,23 @@ while :; do
     ;;
   -rmvol)
     RMVOL=1
+    NOTICE=0
     ;;
   -credentials)
     CREDENTIALS=1
+    NOTICE=0
     ;;
   -ver)
     echo $VERSION
     exit
     ;;
+  -start)
+    DAEMON=1
+    NOTICE=0
+    ;;
   -stop)
     STOP=1
+    NOTICE=0
     ;;
   -vars)
     shift
@@ -57,6 +65,7 @@ while :; do
     ;;
   -foreground)
     DAEMON=0
+    NOTICE=0
     MODE=""
     ;;
   -nopull)
@@ -69,47 +78,42 @@ while :; do
     NOTICE=0
     ;;
   -incognito)
+    NOTICE=0
     INCOGNITO=1
     ;;
   -connect)
     CONNECT=1
+    NOTICE=0
     DAEMON=0
     VERB="exec"
     ;;
   -help)
     NOTICE=1
-    INSTANCE=""
-    TOKEN=""
+    HELP=1
     ;;
   esac
   shift
 done
 
-if [ "$VARS" != "0" ]; then
-  if [ ! -f "$VARS" ]; then
-    echo "Vars file does not exist."
-    echo ""
-    exit 1
-  fi
+echo "Xano Standalone Edition $VERSION"
+echo "Using vars: $VARS"
+echo ""
 
-  source $VARS
-fi
-
-if [ "$NOTICE" = "1" ]; then
-  if [ "$XANO_LICENSE" != "" ]; then
-    NOTICE=0
-  fi
-fi
-
-if [ "$NOTICE" = "1" ]; then
-  echo "Xano Standalone Edition $VERSION"
+if [ ! -f "$VARS" ]; then
+  echo "Vars file does not exist."
   echo ""
+  exit 1
+fi
+
+source $VARS
+
+if [ "$NOTICE" = "1" ]; then
   echo "Required parameters:"
   echo " -lic: the xano license, e.g. d4e7aa6c-cdbc-40e4..."
   echo "    env: XANO_LICENSE"
   echo ""
   echo "Optional parameters:"
-  echo " -vars: a variable file"
+  echo " -vars: a variable file, default: ./settings.vars"
   echo " -port: web port, default: 4200"
   echo "    env: XANO_PORT"
   echo " -origin: the xano master origin, default: https://app.xano.com"
@@ -119,6 +123,7 @@ if [ "$NOTICE" = "1" ]; then
   echo " -nopull: skip pulling the latest docker image"
   echo " -incognito: skip creating a volume, so everything is cleared once the container exits"
   echo " -foreground: run in the foreground instead of as a daemon"
+  echo " -start: start the daemon, or re-start if it is running"
   echo " -stop: stop the daemon, if it is running"
   echo " -shell: run a shell instead of normal entrypoint (this requires no active container)"
   echo " -connect: run a shell into the existing container"
@@ -169,6 +174,19 @@ if [ "$RMVOL" = "1" ]; then
   exit
 fi
 
+if [ "$STOP" = "1" ]; then
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    docker stop -t 3 $CONTAINER >/dev/null
+    echo "stopped"
+    sleep 1
+  else
+    echo "not running"
+  fi
+  exit
+fi
+
 if [ "$DAEMON" = "1" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
@@ -177,19 +195,6 @@ if [ "$DAEMON" = "1" ]; then
     echo "restarting daemon"
     sleep 1
   fi
-fi
-
-if [ "$STOP" = "1" ]; then
-  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
-  ret=$?
-  if [ $ret -eq 0 ]; then
-    docker stop -t 3 $CONTAINER >/dev/null
-    echo "daemon stopped"
-    sleep 1
-  else
-    echo "daemon not running"
-  fi
-  exit
 fi
 
 if [ "$CREDENTIALS" = "1" ]; then
@@ -206,27 +211,6 @@ if [ "$CREDENTIALS" = "1" ]; then
     echo ""
     exit 1
   else
-    echo "There is no existing container running."
-    echo ""
-    exit 1
-  fi
-fi
-
-if [ "$CONNECT" = "0" ]; then
-  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
-  ret=$?
-  if [ $ret -eq 0 ]; then
-    echo "Existing container is already running."
-    echo "Is this intentional? If not, run the following command to remove it:"
-    echo ""
-    echo "  docker kill $CONTAINER"
-    echo ""
-    exit 1
-  fi
-else
-  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
-  ret=$?
-  if [ $ret -ne 0 ]; then
     echo "There is no existing container running."
     echo ""
     exit 1
@@ -250,12 +234,26 @@ if [ "$INCOGNITO" = "0" ]; then
 fi
 
 if [ "$CONNECT" = "1" ]; then
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "not running"
+    exit 1
+  fi
+
   docker \
     exec \
     -it \
     $CONTAINER \
     /bin/sh
 else
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    echo "already running"
+    exit 1
+  fi
+
   docker \
     run \
     --name $CONTAINER \
