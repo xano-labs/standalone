@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.8
+VERSION=1.0.9
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -21,6 +21,9 @@ RMVOL=0
 STOP=0
 HELP=0
 CREDENTIALS=0
+WITH_BRANCH=""
+WITH_FILES="0"
+WITH_RECORDS="0"
 
 while :; do
   case $1 in
@@ -87,6 +90,21 @@ while :; do
     DAEMON=0
     VERB="exec"
     ;;
+  -export)
+    EXPORT=1
+    NOTICE=0
+    VERB="exec"
+    ;;
+  -with-branch)
+    shift
+    WITH_BRANCH=$1
+    ;;
+  -with-files)
+    WITH_FILES="1"
+    ;;
+  -with-records)
+    WITH_RECORDS="1"
+    ;;
   -help)
     NOTICE=1
     HELP=1
@@ -109,26 +127,27 @@ source $VARS
 
 if [ "$NOTICE" = "1" ]; then
   echo "Required parameters:"
-  echo " -lic: the xano license, e.g. d4e7aa6c-cdbc-40e4..."
-  echo "    env: XANO_LICENSE"
+  echo " -lic [arg, env:XANO_LICENSE]: the xano license, e.g. d4e7aa6c-cdbc-40e4..."
   echo ""
   echo "Optional parameters:"
-  echo " -vars: a variable file, default: ./settings.vars"
-  echo " -port: web port, default: 4200"
-  echo "    env: XANO_PORT"
-  echo " -origin: the xano master origin, default: https://app.xano.com"
-  echo "    env: XANO_ORIGIN"
-  echo " -tag: the docker image tag, default: latest"
+  echo " -vars [arg]: a variable file, default: ./settings.vars"
+  echo " -port [arg, env:XANO_PORT]: web port, default: 4200"
+  echo " -origin [arg, env:XANO_ORIGIN]: the xano master origin, default: https://app.xano.com"
+  echo " -tag [arg]: the docker image tag, default: latest"
   echo " -rmvol: remove the volume, if it exists"
   echo " -nopull: skip pulling the latest docker image"
   echo " -incognito: skip creating a volume, so everything is cleared once the container exits"
-  echo " -foreground: run in the foreground instead of as a daemon"
-  echo " -start: start the daemon, or re-start if it is running"
-  echo " -stop: stop the daemon, if it is running"
+  echo " -foreground: run in the foreground"
+  echo " -start: start in the background, or re-start if it is running"
+  echo " -stop: stop the background process, if it is running"
   echo " -shell: run a shell instead of normal entrypoint (this requires no active container)"
   echo " -connect: run a shell into the existing container"
   echo " -credentials: retrieve the initial credentials"
   echo " -ver: display the shell script version"
+  echo " -export: export the workspace - schema and business logic only"
+  echo " -with-branch [arg]: specify the branch to use - otherwise, the live branch will be used"
+  echo " -with-records: include database records with the export"
+  echo " -with-files: include media storage with the export"
   echo " -help: display this menu"
   exit 1
 fi
@@ -192,7 +211,7 @@ if [ "$DAEMON" = "1" ]; then
   ret=$?
   if [ $ret -eq 0 ]; then
     docker stop -t 3 $CONTAINER >/dev/null
-    echo "restarting daemon"
+    echo "restarting"
     sleep 1
   fi
 fi
@@ -233,7 +252,27 @@ if [ "$INCOGNITO" = "0" ]; then
   VOLUME="-v $CONTAINER:/xano/storage"
 fi
 
-if [ "$CONNECT" = "1" ]; then
+if [ "$EXPORT" = "1" ]; then
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "not running"
+    exit 1
+  fi
+
+  export=$(docker \
+    exec \
+    $CONTAINER \
+    php /xano/bin/tools/standalone/export.php --branch "$WITH_BRANCH" --records "$WITH_RECORDS" --files "$WITH_FILES")
+  ret=$?
+
+  if [ $ret -ne 0 ]; then
+    echo "Error: $export"
+    exit 1
+  fi
+
+  docker cp $CONTAINER:$export $(basename $export)
+elif [ "$CONNECT" = "1" ]; then
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
   if [ $ret -ne 0 ]; then
@@ -273,6 +312,6 @@ else
     docker \
       exec \
       $CONTAINER \
-      php /xano/bin/tools/standaloneReady.php
+      php /xano/bin/tools/standalone/ready.php
   fi
 fi
