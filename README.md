@@ -1,4 +1,4 @@
-# Xano Standalone 1.0.9
+# Xano Standalone 1.0.10
 
 ## What is Xano Standalone?
 
@@ -38,29 +38,28 @@ curl -s 'https://gitlab.com/xano/standalone/-/raw/main/xano.sh' | bash -s --
 ```
 Xano Standalone Edition
 
-Required parameters:
- -lic [arg, env:XANO_LICENSE]: the xano license, e.g. d4e7aa6c-cdbc-40e4...
-
-Optional parameters:
- -vars [arg]: a variable file, default: ./settings.vars
- -port [arg, env:XANO_PORT]: web port, default: 4200
- -origin [arg, env:XANO_ORIGIN]: the xano master origin, default: https://app.xano.com
- -tag [arg]: the docker image tag, default: latest
- -rmvol: remove the volume, if it exists
- -nopull: skip pulling the latest docker image
- -incognito: skip creating a volume, so everything is cleared once the container exits
- -foreground: run in the foreground
- -start: start in the background, or re-start if it is running
- -stop: stop the background process, if it is running
- -shell: run a shell instead of normal entrypoint (this requires no active container)
- -connect: run a shell into the existing container
- -credentials: retrieve the initial credentials
- -ver: display the shell script version
- -export: export the workspace - schema and business logic only
- -with-branch [arg]: specify the branch to use - otherwise, the live branch will be used
- -with-records: include database records with the export
- -with-files: include media storage with the export
- -help: display this menu
+Required parameters:"
+ -lic [arg:license, env:XANO_LICENSE]: the xano license, e.g. d4e7aa6c-cdbc-40e4..."
+"
+Optional parameters:"
+ -vars [arg:file]: a variable file, default: ./settings.vars"
+ -port [arg:port, env:XANO_PORT]: web port, default: 4200"
+ -origin [arg:origin, env:XANO_ORIGIN]: the xano master origin, default: https://app.xano.com"
+ -tag [arg:tag]: the docker image tag, default: latest"
+ -rmvol: remove the volume, if it exists"
+ -nopull: skip pulling the latest docker image"
+ -incognito: skip creating a volume, so everything is cleared once the container exits"
+ -foreground: run in the foreground"
+ -start: start in the background, or re-start if it is running"
+ -stop: stop the background process, if it is running"
+ -shell: run a shell instead of normal entrypoint (this requires no active container)"
+ -connect: run a shell into the existing container"
+ -credentials: retrieve the initial credentials"
+ -ver: display the shell script version"
+ -export-workspace: export the workspace's database tables, records, live branch, and media"
+ -import-workspace [arg:file]: replace the existing workspace with the new import"
+ -reset: reset workspace"
+ -help: display this menu"
 ```
 
 ## Variable Config File
