@@ -274,7 +274,7 @@ case "$ACTION" in
   echo "reset"
   exit
   ;;
--import)
+-import-workspace)
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
   if [ $ret -ne 0 ]; then
@@ -287,7 +287,7 @@ case "$ACTION" in
   docker \
     exec \
     $CONTAINER \
-    php /xano/bin/tools/standalone/import.php --file /tmp/import.tar.gz --branch "$IMPORT_BRANCH"
+    php /xano/bin/tools/standalone/import-workspace.php --file /tmp/import.tar.gz --branch "$IMPORT_BRANCH"
   ret=$?
   exit
 
