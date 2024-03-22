@@ -1,13 +1,12 @@
 #!/bin/bash
 
-VERSION=1.0.12
+VERSION=1.0.13
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
 IMAGE=gcr.io/xano-registry/standalone
 TAG=latest
 PULL=missing
-NOPULL=0
 MODE="-d"
 ENTRYPOINT=""
 INCOGNITO=0
@@ -49,10 +48,16 @@ while :; do
     shift
     VARS=$1
 
+    if [ "$VARS" = "XANO_VAR_FILE" ] && [ ! -f "$VARS" ]; then
+      echo "Replace XANO_VAR_FILE with your actual file name."
+      exit 1
+    fi
+
     if [ "$VARS" = "" ]; then
       echo "Missing file"
       exit 1
     fi
+
     ;;
   -lic)
     shift
@@ -76,8 +81,8 @@ while :; do
     ACTION=$1
     MODE=""
     ;;
-  -nopull)
-    NOPULL=1
+  -pull)
+    PULL="always"
     ;;
   -shell)
     ACTION=$1
@@ -93,6 +98,38 @@ while :; do
     ;;
   -reset)
     ACTION=$1
+    ;;
+  -create)
+    ACTION=$1
+    shift
+    XANO_LICENSE=$1
+
+    if [ "$XANO_LICENSE" = "" ]; then
+      echo "Missing license"
+      exit 1
+    fi
+
+    if [ "$XANO_LICENSE" = "XANO_LICENSE" ]; then
+      echo "Replace XANO_LICENSE with your Xano standalone license."
+      exit 1
+    fi
+
+    echo "Creating Xano variable file"
+    echo ""
+    echo "(letters, numbers, or underscores - no spaces)"
+    echo -n "Please enter a name for this file: "
+    read name
+
+    printf "XANO_LICENSE=$XANO_LICENSE\nXANO_ORIGIN=https://app.xano.com\nXANO_PORT=4201\n\n" > "$name.vars"
+
+    echo ""
+    echo "file created: $name.vars"
+    echo ""
+    echo "Continue to step 4 in our getting started guide."
+    echo "https://www.xano.com/"
+    echo ""
+
+    exit 
     ;;
   -import-workspace)
     ACTION=$1
@@ -161,10 +198,6 @@ fi
 
 source $VARS
 
-if [ "$TAG" = "latest" ] && [ "$NOPULL" = "0" ]; then
-  PULL="always"
-fi
-
 pwd=$(cd "$(dirname "$0")" && pwd -P)
 
 docker=$(which docker)
@@ -184,17 +217,19 @@ case "$ACTION" in
   echo ""
   echo "Optional parameters:"
   echo " -vars [arg:file, default: ./settings.vars]"
-  echo "    a variable file"
+  echo "    a file consisting of xano variables"
   echo " -port [arg:port, env:XANO_PORT, default: 4200]"
   echo "    web port"
   echo " -origin [arg:origin, env:XANO_ORIGIN, default: https://app.xano.com]"
   echo "    the xano master origin"
   echo " -tag [arg:tag, default: latest]"
   echo "    the docker image tag"
+  echo " -create [arg:license]"
+  echo "    create a file for xano variables"
   echo " -rmvol"
   echo "    remove the volume, if it exists"
-  echo " -nopull"
-  echo "    skip pulling the latest docker imag"
+  echo " -pull"
+  echo "    pull the latest docker image"
   echo " -incognito"
   echo "    skip creating a volume, so everything is cleared once the container exits"
   echo " -foreground"
@@ -207,8 +242,6 @@ case "$ACTION" in
   echo "    run a shell instead of normal entrypoint (this requires no active container)"
   echo " -connect"
   echo "    run a shell into the existing container"
-  echo " -credentials"
-  echo "    retrieve the initial credentials"
   echo " -ver"
   echo "    display the shell script version"
   echo " -export-workspace"
@@ -266,25 +299,6 @@ case "$ACTION" in
     echo "restarting"
     sleep 1
   fi
-  ;;
--credentials)
-  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
-  ret=$?
-  if [ $ret -eq 0 ]; then
-    echo "INITIAL CREDENTIALS"
-    echo ""
-    echo "Note: These are no longer valid after first login."
-    echo ""
-    echo "Email:    "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.email')
-    echo "Password: "$(docker exec $CONTAINER sh -c 'cat /xano/storage/xano.yaml | yq .standalone.password')
-    echo "Origin:   http://localhost:$XANO_PORT"
-    echo ""
-  else
-    echo "There is no existing container running."
-    echo ""
-    exit 1
-  fi
-  exit
   ;;
 -export-workspace)
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
