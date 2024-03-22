@@ -209,8 +209,6 @@ fi
 
 source $VARS
 
-pwd=$(cd "$(dirname "$0")" && pwd -P)
-
 docker=$(which docker)
 
 if [ "$docker" = "" ]; then
