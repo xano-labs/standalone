@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.13
+VERSION=1.0.14
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -111,15 +111,25 @@ while :; do
       exit 1
     fi
 
-    echo "Creating Xano variable file"
-    echo ""
-    echo "(letters, numbers, or underscores - no spaces)"
-    echo -n "Please enter a name for this file or leave blank to use the default: "
-    read name
+    while :; do
+      echo "Creating Xano variable file"
+      echo ""
+      echo "Please enter a name for this file"
+      echo -n "or leave blank to use the default: "
+      read name
 
-    if [ "$name" = "" ]; then
-      name="settings"
-    fi
+      if [ "$name" = "" ]; then
+        name="settings"
+      fi
+
+      if [[ $name = *" "* ]]; then
+        echo ""
+        echo "### Please try again with no spaces."
+        echo ""
+      else
+        break
+      fi
+    done
 
     printf "XANO_LICENSE=$XANO_LICENSE\nXANO_ORIGIN=https://app.xano.com\nXANO_PORT=4201\n\n" > "$name.vars"
 
