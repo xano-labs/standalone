@@ -102,23 +102,24 @@ while :; do
   -create)
     ACTION=$1
     shift
-    XANO_LICENSE=$1
+
+    echo -n "Enter in your license key: "
+    read XANO_LICENSE
 
     if [ "$XANO_LICENSE" = "" ]; then
       echo "Missing license"
       exit 1
     fi
 
-    if [ "$XANO_LICENSE" = "XANO_LICENSE" ]; then
-      echo "Replace XANO_LICENSE with your Xano standalone license."
-      exit 1
-    fi
-
     echo "Creating Xano variable file"
     echo ""
     echo "(letters, numbers, or underscores - no spaces)"
-    echo -n "Please enter a name for this file: "
+    echo -n "Please enter a name for this file or leave blank to use the default: "
     read name
+
+    if [ "$name" = "" ]; then
+      name="settings"
+    fi
 
     printf "XANO_LICENSE=$XANO_LICENSE\nXANO_ORIGIN=https://app.xano.com\nXANO_PORT=4201\n\n" > "$name.vars"
 
@@ -126,7 +127,7 @@ while :; do
     echo "file created: $name.vars"
     echo ""
     echo "Continue to step 4 in our getting started guide."
-    echo "https://go.xano.co/4a6E1zc"
+    echo "https://go.xano.co/standalone-docs"
     echo ""
 
     exit 
@@ -224,8 +225,8 @@ case "$ACTION" in
   echo "    the xano master origin"
   echo " -tag [arg:tag, default: latest]"
   echo "    the docker image tag"
-  echo " -create [arg:license]"
-  echo "    create a file for xano variables"
+  echo " -create"
+  echo "    create a vars file for your xano standalone license"
   echo " -rmvol"
   echo "    remove the volume, if it exists"
   echo " -pull"
