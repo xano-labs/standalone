@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.14
+VERSION=1.0.15
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -82,7 +82,7 @@ while :; do
     MODE=""
     ;;
   -pull)
-    PULL="always"
+    ACTION=$1
     ;;
   -shell)
     ACTION=$1
@@ -141,6 +141,12 @@ while :; do
     echo ""
 
     exit 
+    ;;
+  -info)
+    ACTION=$1
+    ;;
+  -renew)
+    ACTION=$1
     ;;
   -import-workspace)
     ACTION=$1
@@ -238,7 +244,7 @@ case "$ACTION" in
   echo " -rmvol"
   echo "    remove the volume, if it exists"
   echo " -pull"
-  echo "    pull the latest docker image"
+  echo "    pull the latest standalone docker image"
   echo " -incognito"
   echo "    skip creating a volume, so everything is cleared once the container exits"
   echo " -foreground"
@@ -263,6 +269,10 @@ case "$ACTION" in
   echo "    import schema into a new branch and optionally set it live"
   echo " -reset"
   echo "    reset workspace"
+  echo " -info"
+  echo "    get details about the license"
+  echo " -renew"
+  echo "    renew the license"
   echo " -help"
   echo "    display this menu"
   echo ""
@@ -288,6 +298,28 @@ case "$ACTION" in
   fi
   exit
   ;;
+-pull)
+  RESTART=0
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    echo "stopping"
+    docker stop -t 3 $CONTAINER >/dev/null
+    sleep 1
+    RESTART=1
+  fi
+
+  docker pull $IMAGE:$TAG
+
+  echo "update complete"
+
+  if [ "$RESTART" = "1" ]; then
+    echo "starting"
+    ACTION="-start"
+  else
+    exit
+  fi
+  ;;
 -stop)
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
@@ -308,6 +340,39 @@ case "$ACTION" in
     echo "restarting"
     sleep 1
   fi
+  ;;
+-info)
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "not running"
+    exit 1
+  fi
+
+  docker \
+    exec \
+    $CONTAINER \
+    php /xano/bin/tools/standalone/info.php
+  exit
+  ;;
+-renew)
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "not running"
+    exit 1
+  fi
+
+  docker \
+    exec \
+    $CONTAINER \
+    php /xano/bin/tools/standalone/renew.php > /dev/null
+
+  docker \
+    exec \
+    $CONTAINER \
+    php /xano/bin/tools/standalone/info.php
+  exit
   ;;
 -export-workspace)
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
@@ -452,7 +517,7 @@ docker \
   -e "XANO_ORIGIN=$XANO_ORIGIN" \
   -e "XANO_PORT=$XANO_PORT" \
   $VOLUME \
-  $IMAGE:$TAG
+  $IMAGE:$TAG > /dev/null
 
 if [ "$ACTION" = "-start" ]; then
   sleep 1
