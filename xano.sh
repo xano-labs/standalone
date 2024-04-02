@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.15
+VERSION=1.0.16
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -199,30 +199,32 @@ while :; do
   shift
 done
 
-if [[ $VARS != *".vars" ]]; then
-  VARS="$VARS.vars"
-fi
+if [ "$ACTION" != "-help" ]; then
+  if [[ $VARS != *".vars" ]]; then
+    VARS="$VARS.vars"
+  fi
 
-echo "Xano Standalone Edition $VERSION"
-echo "Using vars: $VARS"
-echo ""
-
-if [ ! -f "$VARS" ]; then
-  echo "Vars file does not exist."
+  echo "Xano Standalone Edition $VERSION"
+  echo "Using vars: $VARS"
   echo ""
-  exit 1
+
+  if [ ! -f "$VARS" ]; then
+    echo "Vars file does not exist."
+    echo ""
+    exit 1
+  fi
+
+  source $VARS
+
+  docker=$(which docker)
+
+  if [ "$docker" = "" ]; then
+    echo "Missing docker."
+    exit
+  fi
+
+  CONTAINER="xano-"$XANO_LICENSE
 fi
-
-source $VARS
-
-docker=$(which docker)
-
-if [ "$docker" = "" ]; then
-  echo "Missing docker."
-  exit
-fi
-
-CONTAINER="xano-"$XANO_LICENSE
 
 case "$ACTION" in
 -help)
