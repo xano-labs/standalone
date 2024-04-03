@@ -368,7 +368,7 @@ case "$ACTION" in
   ret=$(docker exec $CONTAINER php /xano/bin/tools/standalone/renew.php)
 
   if [ "$ret" != "ok" ]; then
-    echo $ret
+    echo "$ret"
     exit 1
   fi
 
