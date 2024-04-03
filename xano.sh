@@ -365,10 +365,12 @@ case "$ACTION" in
     exit 1
   fi
 
-  docker \
-    exec \
-    $CONTAINER \
-    php /xano/bin/tools/standalone/renew.php > /dev/null
+  ret=$(docker exec $CONTAINER php /xano/bin/tools/standalone/renew.php)
+
+  if [ "$ret" != "ok" ]; then
+    echo $ret
+    exit 1
+  fi
 
   docker \
     exec \
