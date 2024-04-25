@@ -31,9 +31,6 @@ while :; do
   -rmvol)
     ACTION=$1
     ;;
-  -credentials)
-    ACTION=$1
-    ;;
   -ver)
     echo $VERSION
     exit
