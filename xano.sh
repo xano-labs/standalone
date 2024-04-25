@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.16
+VERSION=1.0.17
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -199,7 +199,7 @@ while :; do
   shift
 done
 
-if [ "$ACTION" != "-help" ]; then
+if [ "$ACTION" != "-help" ] && [ "$ACTION" != "-pull" ]; then
   if [[ $VARS != *".vars" ]]; then
     VARS="$VARS.vars"
   fi
