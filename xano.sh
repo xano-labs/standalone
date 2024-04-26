@@ -75,7 +75,7 @@ while :; do
     fi
     ;;
   -foreground)
-    ACTION=$1
+    ACTION=-start
     MODE=""
     ;;
   -pull)
