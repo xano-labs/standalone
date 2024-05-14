@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.17
+VERSION=1.0.18
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -143,6 +143,19 @@ while :; do
     ACTION=$1
     ;;
   -renew)
+    ACTION=$1
+    ;;
+  -delete-branch)
+    ACTION=$1
+    shift
+    BRANCH_LABEL=$1
+
+    if [ "$BRANCH_LABEL" = "" ]; then
+      echo "Missing branch label"
+      exit 1
+    fi
+    ;;
+  -list-branch)
     ACTION=$1
     ;;
   -import-workspace)
