@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.18
+VERSION=1.0.19
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -11,7 +11,7 @@ MODE="-d"
 ENTRYPOINT=""
 INCOGNITO=0
 VOLUME=""
-VARS=./settings
+VARS=${XANO_VARS:-settings}
 ACTION="-help"
 
 while :; do
