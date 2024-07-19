@@ -1,11 +1,9 @@
 #!/bin/bash
 
-VERSION=1.0.19
+VERSION=1.0.20
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
-IMAGE=gcr.io/xano-registry/standalone
-TAG=latest
 PULL=missing
 MODE="-d"
 ENTRYPOINT=""
@@ -209,7 +207,7 @@ while :; do
   shift
 done
 
-if [ "$ACTION" != "-help" ] && [ "$ACTION" != "-pull" ]; then
+if [ "$ACTION" != "-help" ]; then
   if [[ $VARS != *".vars" ]]; then
     VARS="$VARS.vars"
   fi
@@ -225,6 +223,9 @@ if [ "$ACTION" != "-help" ] && [ "$ACTION" != "-pull" ]; then
   fi
 
   source $VARS
+
+  REPO=${XANO_REPO:-gcr.io/xano-registry/standalone}
+  TAG=${XANO_TAG:-latest}
 
   docker=$(which docker)
 
@@ -312,6 +313,7 @@ case "$ACTION" in
   ;;
 -pull)
   RESTART=0
+
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
   if [ $ret -eq 0 ]; then
@@ -321,7 +323,7 @@ case "$ACTION" in
     RESTART=1
   fi
 
-  docker pull $IMAGE:$TAG
+  docker pull $REPO:$TAG
 
   echo "update complete"
 
@@ -351,6 +353,14 @@ case "$ACTION" in
     docker stop -t 3 $CONTAINER >/dev/null
     echo "restarting"
     sleep 1
+  fi
+  ;;
+-shell)
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -eq 0 ]; then
+    echo "A container is already in use. Try using -connect instead."
+    exit 1
   fi
   ;;
 -info)
@@ -531,7 +541,7 @@ docker \
   -e "XANO_ORIGIN=$XANO_ORIGIN" \
   -e "XANO_PORT=$XANO_PORT" \
   $VOLUME \
-  $IMAGE:$TAG > /dev/null
+  $REPO:$TAG > /dev/null
 
 if [ "$ACTION" = "-start" ]; then
   sleep 1
