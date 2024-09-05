@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.20
+VERSION=1.0.21
 XANO_PORT=${XANO_PORT:-4200}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -11,6 +11,7 @@ INCOGNITO=0
 VOLUME=""
 VARS=${XANO_VARS:-settings}
 ACTION="-help"
+VERBOSE="/dev/null"
 
 while :; do
   case $1 in
@@ -63,6 +64,10 @@ while :; do
       exit 1
     fi
     ;;
+  -verbose)
+    shift
+    VERBOSE="/dev/stdout"
+    ;;
   -origin)
     shift
     ORIGIN=$1
@@ -83,6 +88,7 @@ while :; do
     ACTION=$1
     MODE="-it"
     ENTRYPOINT="--entrypoint=/bin/sh"
+    VERBOSE="/dev/stdout"
     ;;
   -incognito)
     INCOGNITO=1
@@ -126,7 +132,7 @@ while :; do
       fi
     done
 
-    printf "XANO_LICENSE=$XANO_LICENSE\nXANO_ORIGIN=https://app.xano.com\nXANO_PORT=4201\n\n" > "$name.vars"
+    printf "XANO_LICENSE=$XANO_LICENSE\nXANO_ORIGIN=https://app.xano.com\nXANO_PORT=4201\nXANO_REPO=gcr.io/xano-registry/standalone\nXANO_TAG=latest\n\n" > "$name.vars"
 
     echo ""
     echo "file created: $name.vars"
@@ -156,6 +162,16 @@ while :; do
   -list-branch)
     ACTION=$1
     ;;
+  -import-all)
+    ACTION=$1
+    shift
+    IMPORT_FILE=$1
+
+    if [ "$IMPORT_FILE" = "" ]; then
+      echo "Missing file"
+      exit 1
+    fi
+    ;;
   -import-workspace)
     ACTION=$1
     shift
@@ -165,6 +181,9 @@ while :; do
       echo "Missing file"
       exit 1
     fi
+    ;;
+  -export-all)
+    ACTION=$1
     ;;
   -export-workspace)
     ACTION=$1
@@ -272,6 +291,10 @@ case "$ACTION" in
   echo "    run a shell into the existing container"
   echo " -ver"
   echo "    display the shell script version"
+  echo " -export-all"
+  echo "    export admin credentials, database tables, records, branches, and media"
+  echo " -import-all [arg:file]"
+  echo "    replace the entire environment with the new import"
   echo " -export-workspace"
   echo "    export the workspace's database tables, records, live branch, and media"
   echo " -import-workspace [arg:file]"
@@ -286,6 +309,8 @@ case "$ACTION" in
   echo "    get details about the license"
   echo " -renew"
   echo "    renew the license"
+  echo " -verbose"
+  echo "    show additional logging messages for debugging"
   echo " -help"
   echo "    display this menu"
   echo ""
@@ -398,6 +423,28 @@ case "$ACTION" in
     php /xano/bin/tools/standalone/info.php
   exit
   ;;
+-export-all)
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "not running"
+    exit 1
+  fi
+
+  export=$(docker \
+    exec \
+    $CONTAINER \
+    php /xano/bin/tools/standalone/export-all.php)
+  ret=$?
+
+  if [ $ret -ne 0 ]; then
+    echo "Error: $export"
+    exit 1
+  fi
+
+  docker cp $CONTAINER:$export $(basename $export)
+  exit
+  ;;
 -export-workspace)
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
@@ -480,6 +527,22 @@ case "$ACTION" in
   echo "reset"
   exit
   ;;
+-import-all)
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "not running"
+    exit 1
+  fi
+
+  docker cp $(realpath $IMPORT_FILE) $CONTAINER:/tmp/import.tar.gz > /dev/null
+
+  docker \
+    exec \
+    $CONTAINER \
+    php /xano/bin/tools/standalone/import-all.php --file /tmp/import.tar.gz
+  exit
+  ;;
 -import-workspace)
   ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
   ret=$?
@@ -541,7 +604,7 @@ docker \
   -e "XANO_ORIGIN=$XANO_ORIGIN" \
   -e "XANO_PORT=$XANO_PORT" \
   $VOLUME \
-  $REPO:$TAG > /dev/null
+  $REPO:$TAG > $VERBOSE
 
 if [ "$ACTION" = "-start" ]; then
   sleep 1
