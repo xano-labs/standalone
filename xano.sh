@@ -13,7 +13,7 @@ VARS=${XANO_VARS:-settings}
 ACTION="-help"
 VERBOSE="/dev/null"
 XANO_REPO=us-docker.pkg.dev/xano-registry/public/standalone
-XANO_TAG=0.0.47
+XANO_TAG=0.0.49
 
 while :; do
   case $1 in
