@@ -1,7 +1,7 @@
 #!/bin/bash
 
-VERSION=1.0.21
-XANO_PORT=${XANO_PORT:-4200}
+VERSION=1.0.22
+XANO_PORT=${XANO_PORT:-4201}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
 PULL=missing
@@ -12,6 +12,8 @@ VOLUME=""
 VARS=${XANO_VARS:-settings}
 ACTION="-help"
 VERBOSE="/dev/null"
+XANO_REPO=us-docker.pkg.dev/xano-registry/public/standalone
+XANO_TAG=0.0.47
 
 while :; do
   case $1 in
@@ -132,7 +134,7 @@ while :; do
       fi
     done
 
-    printf "XANO_LICENSE=$XANO_LICENSE\nXANO_ORIGIN=https://app.xano.com\nXANO_PORT=4201\nXANO_REPO=gcr.io/xano-registry/standalone\nXANO_TAG=latest\n\n" > "$name.vars"
+    printf "XANO_LICENSE=$XANO_LICENSE\nXANO_ORIGIN=$XANO_ORIGIN\nXANO_PORT=$XANO_PORT\nXANO_REPO=$XANO_REPO\nXANO_TAG=$XANO_TAG\n\n" > "$name.vars"
 
     echo ""
     echo "file created: $name.vars"
@@ -243,8 +245,8 @@ if [ "$ACTION" != "-help" ]; then
 
   source $VARS
 
-  REPO=${XANO_REPO:-gcr.io/xano-registry/standalone}
-  TAG=${XANO_TAG:-latest}
+  REPO=$XANO_REPO
+  TAG=$XANO_TAG
 
   docker=$(which docker)
 
