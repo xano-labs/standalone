@@ -417,17 +417,18 @@ while :; do
   install-cluster-issuer)
     shift
 
-    SRC=$1
-    validate_file $SRC
+    LIC=$(get_arg -lic "$@")
+    validate_license "$LIC"
 
-    EMAIL=$(get_email $SRC)
-    CLUSTER_ISSUER_NAME=$(get_clusterIssuer $SRC)
+    LICID=$(get_license $LIC)
+    EMAIL=$(get_email $LIC)
 
-    CLUSTER_ISSUER_FILE=./data/cluster-issuer.yaml
+    CLUSTER_ISSUER_FILE=$(get_arg -file "$@")
     validate_file $CLUSTER_ISSUER_FILE
 
     DATA=$(cat $CLUSTER_ISSUER_FILE)
-    DATA=$(echo "$DATA" | yq '.metadata.name = "'$CLUSTER_ISSUER_NAME'" | .spec.acme.email = "'$EMAIL'" |  .spec.acme.privateKeySecretRef.name = "'$CLUSTER_ISSUER_NAME'" ')
+
+    DATA=$(echo "$DATA" | yq '.spec.acme.email = "'$EMAIL'"') # = "'$EMAIL'")
 
     echo "$DATA" | kubectl apply -f -
 

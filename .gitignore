@@ -1,4 +1,4 @@
-*.vars
-*.yaml
-*.gz
+/*.vars
+/*.yaml
+/*.gz
 cloud/*
