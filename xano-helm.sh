@@ -2,36 +2,28 @@
 
 set -e
 
-VERSION=1.0.2
+VERSION=1.0.3
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
 
 SRC=""
 
-curl=$(which curl)
-if [ "$curl" = "" ]; then
-  echo "Please install curl."
-  exit 1
-fi
+check_script() {
+  set +e
+  RET=$(which "$1")
+  if [ "$RET" = "" ]; then
+    echo "Please install: $1"
+    exit 1
+  fi
+  set -e
+}
 
-yq=$(which yq)
-if [ "$yq" = "" ]; then
-  echo "Please install yq."
-  exit 1
-fi
-
-helm=$(which helm)
-if [ "$helm" = "" ]; then
-  echo "Please install helm."
-  exit 1
-fi
-
-kubectl=$(which kubectl)
-if [ "$kubectl" = "" ]; then
-  echo "Please install kubectl."
-  exit 1
-fi
+check_script curl
+check_script yq
+check_script helm
+check_script kubectl
+check_script kubectl
 
 get_arg() {
   arg=$1
@@ -67,15 +59,13 @@ get_arg() {
 }
 
 validate() {
-  echo "validate $1 $2" >&2
-
   if [ "$2" = "" ]; then
     echo "validate: Missing second argument" >&2
     exit 1
   fi
 
   if [ "$1" = "" ]; then
-    echo "Missing param: $2" >&2
+    echo "$2" >&2
     exit 1
   fi
 }
@@ -118,9 +108,31 @@ validate_file() {
     exit 1
   fi
 
+  if [[ $1 == "http://"* ]] || [[ $1 == "https://"* ]]; then
+    return
+  fi
+
   if [ ! -f "$1" ]; then
     echo "File does not exist - $1"
     exit 1
+  fi
+}
+
+get_file() {
+  if [ -f "$1" ]; then
+    cat "$1"
+  else
+    if [[ $1 == "http://"* ]] || [[ $1 == "https://"* ]]; then
+      RET=$(curl --fail "$1" 2>/dev/null)
+      if [ "$RET" = "" ]; then
+        echo "Unable to download: $1" >&2
+        exit 1
+      fi
+      echo "$RET"
+    else
+      echo "Unknown error."
+      exit 1
+    fi
   fi
 }
 
@@ -142,6 +154,15 @@ validate_config() {
 
   if [ "$RET" = "null" ]; then
     echo "Invalid config file"
+    exit 1
+  fi
+}
+
+validate_clusterissuer() {
+  RET=$(echo "$1" | yq ".kind")
+
+  if [ "$RET" != "ClusterIssuer" ]; then
+    echo "Invalid cluster issuer"
     exit 1
   fi
 }
@@ -333,6 +354,41 @@ while :; do
 
     exit
     ;;
+  del-user)
+    shift
+
+    CFG=$(get_arg -cfg "$@")
+    validate_config "$CFG"
+
+    BY=$(get_arg -by "$@")
+
+    FIELD=id
+    NAMESPACE=$(get_namespace $CFG)
+
+    if [[ $BY == *"@"* ]]; then
+      FIELD=email
+    fi
+
+    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/del-user.php --$FIELD $BY
+
+    exit
+    ;;
+  add-user)
+    shift
+
+    CFG=$(get_arg -cfg "$@")
+    validate_config "$CFG"
+
+    NAME=$(get_arg -name "$@")
+    EMAIL=$(get_arg -email "$@")
+    PASS=$(get_arg -pass "$@")
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/add-user.php --name "$NAME" --email "$EMAIL" --password "$PASS"
+
+    exit
+    ;;
   set-user-pass)
     shift
 
@@ -426,13 +482,16 @@ while :; do
     CLUSTER_ISSUER_FILE=$(get_arg -file "$@")
     validate_file $CLUSTER_ISSUER_FILE
 
-    DATA=$(cat $CLUSTER_ISSUER_FILE)
+    DATA=$(get_file $CLUSTER_ISSUER_FILE)
+    validate_clusterissuer "$DATA"
 
     DATA=$(echo "$DATA" | yq '.spec.acme.email = "'$EMAIL'"') # = "'$EMAIL'")
-
     echo "$DATA" | kubectl apply -f -
 
-    echo "done"
+    exit
+    ;;
+  version)
+    echo $VERSION
     exit
     ;;
   help)
@@ -455,6 +514,11 @@ help)
   echo "    -cfg: the config file of your instance"
   echo "  list-users: display the instance users"
   echo "    -cfg: the config file of your instance"
+  echo "  add-user: create a user"
+  echo "    -cfg: the config file of your instance"
+  echo "    -name: the name of the user"
+  echo "    -email: the email of the user"
+  echo "    -pass: the password of the user"
   echo "  get-user: display a single user from your instance"
   echo "    -cfg: the config file of your instance"
   echo "    -by: the id or email of the user"
@@ -462,6 +526,9 @@ help)
   echo "    -cfg: the config file of your instance"
   echo "    -by: the id or email of the user"
   echo "    -pass: the new password of the user"
+  echo "  del-user: delete a user from your instance"
+  echo "    -cfg: the config file of your instance"
+  echo "    -by: the id or email of the user"
   echo "  public-releases: display the recent public releases"
   echo "  beta-releases: display the recent beta releases"
   echo "  get-license: retrieve a current license file bundled with the latest public release"
@@ -469,6 +536,7 @@ help)
   echo "  renew-license: retrieve a current license file bundled with the latest public release"
   echo "    -lic: the file name of your license"
   echo "    -release: the release id to be bound to your license"
+  echo "  version: display the version of this shell script"
   echo "  help"
   echo "     display this menu"
   echo ""
