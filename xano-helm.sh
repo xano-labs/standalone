@@ -7,8 +7,6 @@ ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
 
-pwd=$(realpath $(dirname "$0"))
-
 SRC=""
 
 curl=$(which curl)
@@ -103,7 +101,7 @@ get_clusterIssuer() {
 }
 
 get_result_file() {
-  echo $pwd/$(get_license $1).yaml
+  echo ./$(get_license $1).yaml
 }
 
 get_namespace() {
@@ -152,14 +150,14 @@ package() {
   LIC=$1
   CFG=$2
 
-  BASE=$pwd/data/base.yaml
-  EXTRAS=$pwd/data/extras.yaml
+  BASE=./data/base.yaml
+  EXTRAS=./data/extras.yaml
 
   validate_file $BASE
 
   RESULT=$(get_result_file $LIC)
 
-  cp -f $pwd/data/base.yaml $RESULT
+  cp -f ./data/base.yaml $RESULT
 
   yq -i '.xano.db = load("'$CFG'").database.credentials' $RESULT
 
@@ -425,7 +423,7 @@ while :; do
     EMAIL=$(get_email $SRC)
     CLUSTER_ISSUER_NAME=$(get_clusterIssuer $SRC)
 
-    CLUSTER_ISSUER_FILE=$pwd/data/cluster-issuer.yaml
+    CLUSTER_ISSUER_FILE=./data/cluster-issuer.yaml
     validate_file $CLUSTER_ISSUER_FILE
 
     DATA=$(cat $CLUSTER_ISSUER_FILE)
