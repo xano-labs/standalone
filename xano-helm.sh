@@ -1,3 +1,5 @@
+set -e
+
 VERSION=1.0.2
 ACTION="help"
 HELM_RELEASE=xano-instance
@@ -99,7 +101,7 @@ get_clusterIssuer() {
 }
 
 get_result_file() {
-  echo $pwd/secret/$(get_license $1).yaml
+  echo $pwd/$(get_license $1).yaml
 }
 
 get_namespace() {
@@ -381,7 +383,7 @@ while :; do
       exit 1
     fi
 
-    FILE="./secret/${NAME}-license.yaml"
+    FILE="./${NAME}-license.yaml"
 
     echo "$LIC" > $FILE
 
@@ -405,7 +407,7 @@ while :; do
       exit 1
     fi
 
-    FILE="./secret/${NAME}-license.yaml"
+    FILE="./${NAME}-license.yaml"
 
     echo "$LIC" > $FILE
 
@@ -441,30 +443,33 @@ done
 
 case "$ACTION" in
 help)
-  echo " deploy: deploy enteprise instance"
-  echo "   -lic: the license file"
-  echo "   -cfg: the config file of your instance"
-  echo " package: create the package file for deployment (debuging only)"
-  echo "   -lic: the license file"
-  echo "   -cfg: the config file of your instance"
-  echo " list-users: display the instance users"
-  echo "   -cfg: the config file of your instance"
-  echo " get-user: display a single user from your instance"
-  echo "   -cfg: the config file of your instance"
-  echo "   -by: the id or email of the user"
-  echo " set-user-pass: set the user password"
-  echo "   -cfg: the config file of your instance"
-  echo "   -by: the id or email of the user"
-  echo "   -pass: the new password of the user"
-  echo " public-releases: display the recent public releases"
-  echo " beta-releases: display the recent beta releases"
-  echo " get-license: retrieve a current license file bundled with the latest public release"
-  echo "   -id: the license id of your instance"
-  echo " renew-license: retrieve a current license file bundled with the latest public release"
-  echo "   -lic: the file name of your license"
-  echo "   -release: the release id to be bound to your license"
-  echo " help"
-  echo "    display this menu"
+  echo "xano-helm.sh $VERSION - Xano Standation (Enterprise Edition) management"
+  echo ""
+  echo "Commands:"
+  echo "  deploy: deploy enteprise instance"
+  echo "    -lic: the license file"
+  echo "    -cfg: the config file of your instance"
+  echo "  package: create the package file for deployment (debuging only)"
+  echo "    -lic: the license file"
+  echo "    -cfg: the config file of your instance"
+  echo "  list-users: display the instance users"
+  echo "    -cfg: the config file of your instance"
+  echo "  get-user: display a single user from your instance"
+  echo "    -cfg: the config file of your instance"
+  echo "    -by: the id or email of the user"
+  echo "  set-user-pass: set the user password"
+  echo "    -cfg: the config file of your instance"
+  echo "    -by: the id or email of the user"
+  echo "    -pass: the new password of the user"
+  echo "  public-releases: display the recent public releases"
+  echo "  beta-releases: display the recent beta releases"
+  echo "  get-license: retrieve a current license file bundled with the latest public release"
+  echo "    -id: the license id of your instance"
+  echo "  renew-license: retrieve a current license file bundled with the latest public release"
+  echo "    -lic: the file name of your license"
+  echo "    -release: the release id to be bound to your license"
+  echo "  help"
+  echo "     display this menu"
   echo ""
   exit
   ;;

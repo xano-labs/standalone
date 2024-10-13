@@ -260,6 +260,8 @@ fi
 
 case "$ACTION" in
 -help)
+  echo "xano.sh $VERSION - Xano Standation (POC Edition) management"
+  echo ""
   echo "Required parameters:"
   echo " -lic [arg:license, env:XANO_LICENSE]"
   echo "    the xano license, e.g. d4e7aa6c-cdbc-40e4..."
