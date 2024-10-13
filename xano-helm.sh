@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.3
+VERSION=1.0.4
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -171,14 +171,15 @@ package() {
   LIC=$1
   CFG=$2
 
-  BASE=./data/base.yaml
-  EXTRAS=./data/extras.yaml
+  BASE=https://gitlab.com/xano/standalone/-/raw/main/data/base.yaml
+  BASE_DATA=$(get_file $BASE)
 
-  validate_file $BASE
+  EXTRAS=https://gitlab.com/xano/standalone/-/raw/main/data/extras.yaml
+  EXTRAS_DATA=$(get_file $EXTRAS)
 
   RESULT=$(get_result_file $LIC)
 
-  cp -f ./data/base.yaml $RESULT
+  echo "$BASE_DATA" > $RESULT
 
   yq -i '.xano.db = load("'$CFG'").database.credentials' $RESULT
 
@@ -188,6 +189,8 @@ package() {
     echo "Missing ingressType."
     exit 1
   fi
+
+  DEPLOYMENT=$(echo "$EXTRAS_DATA" | yq '.ingress["'$INGRESS_TYPE'"].deployment' -o j)
 
   yq -i '.xano.db = load("'$CFG'").database.credentials' $RESULT
   yq -i '.xano.redis = load("'$CFG'").redis.credentials' $RESULT
@@ -207,8 +210,9 @@ package() {
   yq -i '.xano.k8s.ingress.primary.clusterIssuer = load("'$CFG'").k8s.clusterIssuer' $RESULT
   yq -i '.xano.k8s.ingress.class = load("'$CFG'").k8s.ingressClass' $RESULT
   yq -i '.xano.k8s.ingress.annotations = load("'$CFG'").k8s.ingressAnnotations' $RESULT
-  yq -i '.xano.k8s.ingress.type = load("'$CFG'").k8s.ingressType' $RESULT
-  yq -i '.xano.k8s.ingress.deployment = load("'$EXTRAS'").ingress[load("'$CFG'").k8s.ingressType].deployment' $RESULT
+  yq -i '.xano.k8s.ingress.type = "'$INGRESS_TYPE'"' $RESULT
+  yq -i ".xano.k8s.ingress.deployment = $DEPLOYMENT" $RESULT
+
   yq -i '.xano.k8s.deployments.redis.storage.class = load("'$CFG'").k8s.storageClass' $RESULT
   yq -i '.xano.k8s.deployments.database.storage.class = load("'$CFG'").k8s.storageClass' $RESULT
   yq -i '.xano.blob.url.origin = "https://" + load("'$CFG'").host' $RESULT
