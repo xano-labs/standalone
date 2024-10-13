@@ -1,0 +1,296 @@
+xano:
+  dev: false
+  timezone: UTC
+  os:
+    user: www-data
+  auth:
+    expires: 604800
+    secret:
+      kty: oct
+  cache:
+    type: redis
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  mutex:
+    type: redis
+    redis:
+      host: 127.0.0.1
+      port: 6379
+  Tmp:
+    path: /tmp
+  airtable:
+    meta:
+      api_key:
+  share:
+    2fa_template_id:
+    invite_template_id:
+  segment:
+    anonymousId:
+    prefix:
+    userId:
+    write_key:
+  sendgrid:
+    apikey:
+  sentry:
+    client_dsn:
+    env:
+    node_dsn:
+    realtime_dsn:
+  google:
+    recaptcha:
+      secret:
+  ip_whitelist: []
+  captcha:
+    bypass: 4b26ed86107bd9660395d98e1f443e60
+  k8s:
+    image:
+      proxy: false
+      watermark: false
+    limit:
+    custom:
+      configs: []
+      volumes: []
+      ingresses: []
+      deployments: []
+    extras:
+      compliance: false
+      microservice: false
+      securitypolicy: false
+      agencydashboard: false
+    ingress:
+      class: nginx
+      primary:
+        tls:
+          host: 
+          secret: ingress-tls
+        host: 
+        name: ingress
+        clusterIssuer: ""
+        additional: []
+      rewrite: ""
+      secondary: []
+      deployment: []
+      ip_denylist: []
+      ip_allowlist: []
+      serverSnippet: "more_set_headers \"Strict-Transport-Security: max-age=31536000; includeSubDomains; \";\nrewrite ^/admin/(.*)$   /$1 redirect; server_tokens off;\nlocation ~* \"^/api:mvp-internal\" {deny all; return 403;}"
+      clientMaxBodySize: 64M
+    secrets:
+      xano:
+        name: cfg
+        enabled: true
+      database:
+        name: database
+        enabled: true
+      registry:
+        name: registry
+        enabled: false
+      redis:
+        enabled: true
+        name: redis
+    storage:
+      cloud: null
+      private_cloud: null
+    support:
+      name: ""
+    namespace:
+      name: xano-xxg2-kj4f-w23i
+    overrides:
+      disable_backend_backups: false
+      disable_database_maintenance: false
+    additional:
+      link: 0
+      rbac: 0
+      tasks: 0
+      static_ip: 0
+      middleware: 0
+      workspaces: 0
+      memberships: 0
+      data_sources: 0
+      media_storage: 0
+      private_storage: 0
+      unlimited_tasks: 0
+      version_history: 0
+      database_storage: 0
+      database_connector: 0
+    compliance:
+      hipaa: false
+    customized: false
+    deployments:
+      nfs:
+        enabled: false
+      node:
+        name: node
+        service:
+          name: node
+          type: ClusterIP
+          ports:
+            - name: nest
+              port: 3000
+              targetPort: 3000
+              protocol: TCP
+            - name: socket
+              port: 3001
+              targetPort: 3001
+              protocol: TCP
+          enabled: true
+        replicas: 1
+        containers:
+          node:
+            ports:
+              - name: nest
+                containerPort: 3000
+                protocol: TCP
+              - name: socket
+                containerPort: 3001
+                protocol: TCP
+      task:
+        name: task
+        service:
+          name: task
+          type: ClusterIP
+          ports:
+            - name: ""
+              port: 80
+              protocol: TCP
+              targetPort: 80
+          enabled: false
+        replicas: 1
+        containers:
+          task:
+            ports:
+              - name: ""
+                protocol: TCP
+                containerPort: 80
+            resources:
+              limits:
+                cpu: 50m
+                memory: 256Mi
+              requests:
+                cpu: 5m
+                memory: 128Mi
+      redis:
+        name: redis
+        service:
+          name: redis
+          type: ClusterIP
+          ports:
+            - name: ""
+              port: 6379
+              protocol: TCP
+              targetPort: 6379
+          enabled: true
+        storage:
+          name: redis
+          class: ""
+          resources:
+            requests:
+              storage: 1Gi
+        replicas: 1
+        containers:
+          redis:
+            ports:
+              - name: ""
+                protocol: TCP
+                containerPort: 6379
+      backend:
+        name: backend
+        service:
+          name: backend
+          type: ClusterIP
+          ports:
+            - name: ""
+              port: 80
+              protocol: TCP
+              targetPort: 80
+          enabled: true
+        replicas: 1
+        containers:
+          backend:
+            ports:
+              - name: ""
+                protocol: TCP
+                containerPort: 80
+      database:
+        name: database
+        service:
+          name: database
+          type: ClusterIP
+          ports:
+            - name: ""
+              port: 5432
+              protocol: TCP
+              targetPort: 5432
+          enabled: true
+        storage:
+          name: database
+          class: ""
+          resources:
+            requests:
+              storage: 10Gi
+        containers:
+          database:
+            ports:
+              - name: ""
+                protocol: TCP
+                containerPort: 5432
+      frontend:
+        name: frontend
+        service:
+          name: frontend
+          type: ClusterIP
+          ports:
+            - name: ""
+              port: 80
+              protocol: TCP
+              targetPort: 80
+          enabled: true
+        replicas: 1
+        containers:
+          frontend:
+            env:
+            - name: XANO_OVERRIDE
+              value: '{"standalone":"helm"}'
+            ports:
+              - name: ""
+                protocol: TCP
+                containerPort: 80
+      realtime:
+        name: realtime
+        service:
+          name: realtime
+          type: ClusterIP
+          ports:
+            - name: nest
+              port: 3002
+              targetPort: 3002
+              protocol: TCP
+            - name: socket
+              port: 3003
+              targetPort: 3003
+              protocol: TCP
+          enabled: true
+        replicas: 1
+        containers:
+          realtime:
+            ports:
+              - name: nest
+                containerPort: 3002
+                protocol: TCP
+              - name: socket
+                containerPort: 3003
+                protocol: TCP
+    serviceAccount:
+      name: default
+      enabled: false
+    imagePullSecrets: []
+    database_connector:
+      ip_allowlist: []
+    type: client
+  instance_id: 1
+  imagePullSecrets: []
+custom:
+  deployments: []
+  services: []
+  secrets: []
+  volumes: []

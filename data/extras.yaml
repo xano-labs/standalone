@@ -1,0 +1,38 @@
+ingress:
+  nginx:
+    deployment:
+      - name: backend
+        path: "/(api.*|vault.*|swagger.*)"
+        port: 80
+      - name: node
+        path: /(socket/.*)
+        port: 3001
+      - name: realtime
+        path: /(rt/.*)
+        port: 3003
+      - name: frontend
+        path: /_frontend/(.*)
+        port: 80
+      - name: frontend
+        path: /(.*)
+        port: 80
+  azure_application_gateway:
+    deployment:
+      - name: backend
+        path: /api*
+        port: 80
+      - name: backend
+        path: /vault*
+        port: 80
+      - name: backend
+        path: /swagger*
+        port: 80
+      - name: node
+        path: /socket/*
+        port: 3001
+      - name: realtime
+        path: /rt/*
+        port: 3003
+      - name: frontend
+        path: /
+        port: 80
