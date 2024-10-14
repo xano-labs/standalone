@@ -311,7 +311,8 @@ deploy_with_license() {
   VERSION=$(yq .xano.k8s.images.helm.tag $SRC)
   NAMESPACE=$(yq .xano.k8s.namespace.name $SRC)
 
-  helm upgrade -i $HELM_RELEASE $CHART --version $VERSION --namespace $NAMESPACE --create-namespace --values $SRC
+  helm upgrade -i --wait $HELM_RELEASE $CHART --version $VERSION --namespace $NAMESPACE --create-namespace --values $SRC
+  kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/updateExtensions.php
 }
 
 
