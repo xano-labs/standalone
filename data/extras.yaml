@@ -36,3 +36,23 @@ ingress:
       - name: frontend
         path: /
         port: 80
+  apisix:
+    deployment:
+      - name: backend
+        path: /api*
+        port: 80
+      - name: backend
+        path: /vault*
+        port: 80
+      - name: backend
+        path: /swagger*
+        port: 80
+      - name: node
+        path: /socket/*
+        port: 3001
+      - name: realtime
+        path: /rt/*
+        port: 3003
+      - name: frontend
+        path: /
+        port: 80
