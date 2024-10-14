@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.4
+VERSION=1.0.5
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -141,8 +141,15 @@ validate_license() {
 
   RET=$(yq ".license.id" $1)
 
-  if [ "$RET" = "null" ]; then
+  if [ "$RET" = "null" ] || [ "$RET" = "" ]; then
     echo "Invalid license file"
+    exit 1
+  fi
+
+  RET=$(yq ".license.type" $1)
+
+  if [ "$RET" != "helm" ]; then
+    echo "Wrong license type."
     exit 1
   fi
 }

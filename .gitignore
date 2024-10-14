@@ -2,3 +2,8 @@
 /*.yaml
 /*.gz
 cloud/*
+
+# System Files
+.DS_Store
+Thumbs.db
+**/*Zone.Identifier
