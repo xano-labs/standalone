@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.5
+VERSION=1.0.6
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -245,6 +245,24 @@ package() {
   yq -i '.xano *= load("'$LIC'")' $RESULT
 }
 
+fetch_license() {
+  LICID=$1
+
+  LIC=$(curl "$XANO_ORIGIN/api:license/license/$LICID" 2>/dev/null)
+  NAME=$(echo "$LIC" | yq .license.name 2>/dev/null)
+
+  if [ "$NAME" = "" ] || [ "$NAME" = "null" ]; then
+    echo "Unable to locate license."
+    exit 1
+  fi
+
+  FILE="./${NAME}-license.yaml"
+
+  echo "$LIC" > $FILE
+
+  echo "license saved: $FILE"
+}
+
 package_with_license() {
   SRC=$1
 
@@ -435,50 +453,36 @@ while :; do
   get-license)
     shift
 
-    LICID=$(get_arg -id "$@")
+    LICID=$(get_arg -key "$@")
 
     if [[ ! $LICID =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{12}\}?$ ]]; then
       echo "Please enter a valid license id."
       exit
     fi
 
-    LIC=$(curl "$XANO_ORIGIN/api:license/license/$LICID" 2>/dev/null)
-    NAME=$(echo "$LIC" | yq .license.name 2>/dev/null)
-
-    if [ "$NAME" = "" ] || [ "$NAME" = "null" ]; then
-      echo "Unable to locate license."
-      exit 1
-    fi
-
-    FILE="./${NAME}-license.yaml"
-
-    echo "$LIC" > $FILE
-
-    echo "license saved: $FILE"
+    fetch_license "$LICID"
     exit
     ;;
-  renew-license)
+  set-license-release)
     shift
 
-    LIC=$(get_arg -lic "$@")
-    LICID=$(get_license $LIC)
+    LICID=$(get_arg -key "$@")
 
-    RELEASE=$(get_arg -release "$@")
+    if [[ ! $LICID =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{12}\}?$ ]]; then
+      echo "Please enter a valid license id."
+      exit
+    fi
 
-    echo curl "$XANO_ORIGIN/api:license/license/$LICID?release_id=$RELEASE" 2>/dev/null
-    LIC=$(curl "$XANO_ORIGIN/api:license/license/$LICID?release_id=$RELEASE" 2>/dev/null)
-    NAME=$(echo "$LIC" | yq .license.name 2>/dev/null)
+    RELEASEID=$(get_arg -release "$@")
 
-    if [ "$NAME" = "" ] || [ "$NAME" = "null" ]; then
-      echo "Unable to locate license."
+    LIC=$(curl -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
+    MESSAGE=$(echo "$LIC" | yq -p json .message)
+    if [ "$MESSAGE" != "null" ]; then
+      echo "ERROR: $MESSAGE"
       exit 1
     fi
 
-    FILE="./${NAME}-license.yaml"
-
-    echo "$LIC" > $FILE
-
-    echo "license updated: $FILE"
+    fetch_license "$LICID"
     exit
     ;;
   install-cluster-issuer)
