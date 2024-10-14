@@ -54,5 +54,5 @@ ingress:
         path: /rt/*
         port: 3003
       - name: frontend
-        path: /
+        path: /*
         port: 80
