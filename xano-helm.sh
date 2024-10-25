@@ -179,13 +179,13 @@ package() {
   CFG=$2
 
   BASE="./data/base.yaml"
-  if [ !-f "$BASE" ]; then
+  if [ ! -f "$BASE" ]; then
     BASE="https://gitlab.com/xano/standalone/-/raw/main/$BASE"
   fi
   BASE_DATA=$(get_file $BASE)
 
   EXTRAS="./data/extras.yaml"
-  if [ !-f "$EXTRAS" ]; then
+  if [ ! -f "$EXTRAS" ]; then
     EXTRAS="https://gitlab.com/xano/standalone/-/raw/main/$EXTRAS"
   fi
   EXTRAS_DATA=$(get_file $EXTRAS)
