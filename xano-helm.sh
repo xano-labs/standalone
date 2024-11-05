@@ -215,7 +215,7 @@ package() {
   yq -i '.xano.id = "xano://" + load("'$CFG'").license' $RESULT
   yq -i '.xano.security = load("'$CFG'").security' $RESULT
   yq -i '.xano.sodium = load("'$CFG'").sodium' $RESULT
-  yq -i '.xano.node.workers = load("'$CFG'").node.workers' $RESULT
+  yq -i '.xano.node.workers = load("'$CFG'").node.settings.workers' $RESULT
   yq -i '.xano.auth.secret.k = load("'$CFG'").auth.secret' $RESULT
   yq -i '.xano.auth.entraid = load("'$CFG'").auth.entraid' $RESULT
   yq -i '.xano.k8s.ingress.primary.tls.host = load("'$CFG'").host' $RESULT
