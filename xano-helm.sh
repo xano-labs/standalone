@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.8
+VERSION=1.0.9
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -180,13 +180,13 @@ package() {
 
   BASE="./data/base.yaml"
   if [ ! -f "$BASE" ]; then
-    BASE="https://gitlab.com/xano/standalone/-/raw/main/$BASE"
+    BASE="https://raw.githubusercontent.com/xano-labs/standalone/refs/heads/main/$BASE"
   fi
   BASE_DATA=$(get_file $BASE)
 
   EXTRAS="./data/extras.yaml"
   if [ ! -f "$EXTRAS" ]; then
-    EXTRAS="https://gitlab.com/xano/standalone/-/raw/main/$EXTRAS"
+    EXTRAS="https://raw.githubusercontent.com/xano-labs/standalone/refs/heads/main/$EXTRAS"
   fi
   EXTRAS_DATA=$(get_file $EXTRAS)
 
