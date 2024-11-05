@@ -43,6 +43,9 @@ xano:
   ip_whitelist: []
   captcha:
     bypass: 4b26ed86107bd9660395d98e1f443e60
+  meta:
+    algorithm: RS256
+    audience: xano:meta
   k8s:
     image:
       proxy: false

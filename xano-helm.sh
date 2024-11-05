@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.9
+VERSION=1.0.10
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -215,6 +215,7 @@ package() {
   yq -i '.xano.id = "xano://" + load("'$CFG'").license' $RESULT
   yq -i '.xano.security = load("'$CFG'").security' $RESULT
   yq -i '.xano.sodium = load("'$CFG'").sodium' $RESULT
+  yq -i '.xano.meta *= load("'$CFG'").meta' $RESULT
   yq -i '.xano.node.workers = load("'$CFG'").node.settings.workers' $RESULT
   yq -i '.xano.auth.secret.k = load("'$CFG'").auth.secret' $RESULT
   yq -i '.xano.auth.entraid = load("'$CFG'").auth.entraid' $RESULT
