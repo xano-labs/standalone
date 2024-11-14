@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.10
+VERSION=1.0.11
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -44,7 +44,7 @@ get_arg() {
         exit 1
       fi
 
-      echo "$1"
+      printf "%q" "$1"
 
       set +e
 
@@ -334,7 +334,7 @@ while :; do
     LIC=$(get_arg -lic "$@")
     validate_license "$LIC"
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     package "$LIC" "$CFG"
@@ -348,7 +348,7 @@ while :; do
     LIC=$(get_arg -lic "$@")
     validate_license "$LIC"
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     package "$LIC" "$CFG"
@@ -363,7 +363,7 @@ while :; do
   list-users)
     shift
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
@@ -375,7 +375,7 @@ while :; do
   get-user)
     shift
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     BY=$(get_arg -by "$@")
@@ -394,7 +394,7 @@ while :; do
   del-user)
     shift
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     BY=$(get_arg -by "$@")
@@ -413,7 +413,7 @@ while :; do
   add-user)
     shift
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAME=$(get_arg -name "$@")
@@ -429,7 +429,7 @@ while :; do
   set-user-pass)
     shift
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     BY=$(get_arg -by "$@")
@@ -449,7 +449,7 @@ while :; do
   info)
     shift
 
-    CFG=$(get_arg -cfg "$@")
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
@@ -584,13 +584,198 @@ while :; do
   help)
     ACTION=$1
     ;;
+  list-workspaces)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-workspaces.php
+
+    exit
+    ;;
+  delete-workspace)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(get_arg -workspace "$@")
+
+    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-workspace.php --workspace $WORKSPACE
+
+    exit
+    ;;
+  list-branches)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(get_arg -workspace "$@")
+
+    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-branches.php --workspace $WORKSPACE
+
+    exit
+    ;;
+  delete-branch)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(get_arg -workspace "$@")
+    BRANCH=$(get_arg -branch "$@")
+
+    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-branch.php --workspace $WORKSPACE --branch $BRANCH
+
+    exit
+    ;;
+  export-schema)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(get_arg -workspace "$@")
+    BRANCH=$(get_arg -branch "$@")
+
+    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    if [ "$POD" = "" ]; then
+      echo "Unable to locate backend pod."
+      exit 1
+    fi
+
+    FILE=$(kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/export-schema.php --workspace $WORKSPACE --branch $BRANCH)
+    if [[ $FILE != "/tmp/"* ]]; then
+      echo "Unable to locate export."
+      exit 1
+    fi
+
+    FILENAME=$(basename $FILE)
+
+    kubectl cp $NAMESPACE/$POD:$FILE $FILENAME > /dev/null
+
+    if [ ! -f "./$FILENAME" ]; then
+      echo "Unable to download export."
+      exit 1
+    fi
+
+    echo "Exported to: $FILENAME"
+
+    exit
+    ;;
+  export-workspace)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(get_arg -workspace "$@")
+    BRANCH=$(get_arg -branch "$@")
+
+    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    if [ "$POD" = "" ]; then
+      echo "Unable to locate backend pod."
+      exit 1
+    fi
+
+    FILE=$(kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/export-workspace.php --workspace $WORKSPACE --branch $BRANCH)
+    if [[ $FILE != "/tmp/"* ]]; then
+      echo "Unable to locate export."
+      exit 1
+    fi
+
+    FILENAME=$(basename $FILE)
+
+    kubectl cp $NAMESPACE/$POD:$FILE $FILENAME > /dev/null
+
+    if [ ! -f "./$FILENAME" ]; then
+      echo "Unable to download export."
+      exit 1
+    fi
+
+    echo "Exported to: $FILENAME"
+
+    exit
+    ;;
+  import-schema)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(get_arg -workspace "$@")
+    NEWBRANCH=$(get_arg -newbranch "$@")
+    SETLIVE=$(get_arg -setlive "$@")
+    FILE=$(get_arg -file "$@")
+    validate_file $FILE
+
+    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    if [ "$POD" = "" ]; then
+      echo "Unable to locate backend pod."
+      exit 1
+    fi
+
+    FILENAME=$(basename $FILE)
+
+    REMOTE_FILE="/tmp/$FILENAME"
+
+    kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null
+
+    kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/import-schema.php --workspace $WORKSPACE --newbranch $NEWBRANCH --setlive $SETLIVE --file $REMOTE_FILE
+
+    exit
+    ;;
+  import-workspace)
+    shift
+
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(get_arg -workspace "$@")
+    FILE=$(get_arg -file "$@")
+    validate_file $FILE
+
+    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    if [ "$POD" = "" ]; then
+      echo "Unable to locate backend pod."
+      exit 1
+    fi
+
+    FILENAME=$(basename $FILE)
+
+    REMOTE_FILE="/tmp/$FILENAME"
+
+    kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null
+
+    kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/import-workspace.php --workspace $WORKSPACE --file $REMOTE_FILE
+
+    exit
+    ;;
   esac
   shift
 done
 
 case "$ACTION" in
 help)
-  echo "xano-helm.sh $VERSION - Xano Standation (Enterprise Edition) management"
+  echo "xano-helm.sh $VERSION - Xano Enterprise (Self Hosted)"
   echo ""
   echo "Commands:"
   echo "  deploy: deploy enteprise instance"
@@ -630,6 +815,36 @@ help)
   echo "  version: display the version of this shell script"
   echo "  info: get details about the deployed license"
   echo "    -cfg: the config file of your instance"
+  echo "  list-workspaces: list workspaces"
+  echo "    -cfg: the config file of your instance"
+  echo "  delete-workspace: delete workspace"
+  echo "    -cfg: the config file of your instance"
+  echo "    -workspace: the workspace id"
+  echo "  list-branches: list branches of a workspace"
+  echo "    -cfg: the config file of your instance"
+  echo "    -workspace: the workspace id"
+  echo "  delete-branch: delete branch"
+  echo "    -cfg: the config file of your instance"
+  echo "    -workspace: the workspace id"
+  echo "    -branch: the branch label"
+  echo "  export-schema: export the database table + branch schema"
+  echo "    -cfg: the config file of your instance"
+  echo "    -workspace: the workspace id"
+  echo "    -branch: the branch label"
+  echo "  export-workspace: export the workspace's database tables, records, apis, tasks, functions, media, etc."
+  echo "    -cfg: the config file of your instance"
+  echo "    -workspace: the workspace id"
+  echo "    -branch: the branch label"
+  echo "  import-schema: import schema into a new branch and optionally set it live"
+  echo "    -cfg: the config file of your instance"
+  echo "    -file: the schema archive"
+  echo "    -workspace: the workspace id"
+  echo "    -branch: the branch label"
+  echo "    -setlive: whether to set the new branch live"
+  echo "  import-workspace: replace the existing workspace with the new import"
+  echo "    -cfg: the config file of your instance"
+  echo "    -file: the workspace archive"
+  echo "    -workspace: the workspace id"
   echo "  help"
   echo "     display this menu"
   echo ""
