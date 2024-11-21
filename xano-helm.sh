@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.11
+VERSION=1.0.12
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -318,8 +318,8 @@ deploy_with_license() {
   VERSION=$(yq .xano.k8s.images.helm.tag $SRC)
   NAMESPACE=$(yq .xano.k8s.namespace.name $SRC)
 
-  helm upgrade -i --wait $HELM_RELEASE $CHART --version $VERSION --namespace $NAMESPACE --create-namespace --values $SRC
-  kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/updateExtensions.php
+  eval "helm upgrade -i --wait $HELM_RELEASE $CHART --version $VERSION --namespace $NAMESPACE --create-namespace --values $SRC"
+  eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/updateExtensions.php"
 }
 
 
@@ -368,7 +368,7 @@ while :; do
 
     NAMESPACE=$(get_namespace $CFG)
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-users.php
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-users.php"
 
     exit
     ;;
@@ -387,7 +387,7 @@ while :; do
       FIELD=email
     fi
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/get-user.php --$FIELD $BY
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/get-user.php --$FIELD $BY"
 
     exit
     ;;
@@ -406,7 +406,7 @@ while :; do
       FIELD=email
     fi
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/del-user.php --$FIELD $BY
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/del-user.php --$FIELD $BY"
 
     exit
     ;;
@@ -422,7 +422,7 @@ while :; do
 
     NAMESPACE=$(get_namespace $CFG)
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/add-user.php --name "$NAME" --email "$EMAIL" --password "$PASS"
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/add-user.php --name "$NAME" --email $EMAIL --password $PASS"
 
     exit
     ;;
@@ -442,7 +442,7 @@ while :; do
       FIELD=email
     fi
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/set-user-pass.php --$FIELD $BY --password $PASS
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/set-user-pass.php --$FIELD $BY --password $PASS"
 
     exit
     ;;
@@ -454,7 +454,7 @@ while :; do
 
     NAMESPACE=$(get_namespace $CFG)
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/info.php
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/info.php"
 
     exit
     ;;
@@ -592,7 +592,7 @@ while :; do
 
     NAMESPACE=$(get_namespace $CFG)
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-workspaces.php
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-workspaces.php"
 
     exit
     ;;
@@ -606,7 +606,7 @@ while :; do
 
     WORKSPACE=$(get_arg -workspace "$@")
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-workspace.php --workspace $WORKSPACE
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-workspace.php --workspace $WORKSPACE"
 
     exit
     ;;
@@ -620,7 +620,7 @@ while :; do
 
     WORKSPACE=$(get_arg -workspace "$@")
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-branches.php --workspace $WORKSPACE
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-branches.php --workspace $WORKSPACE"
 
     exit
     ;;
@@ -635,7 +635,7 @@ while :; do
     WORKSPACE=$(get_arg -workspace "$@")
     BRANCH=$(get_arg -branch "$@")
 
-    kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-branch.php --workspace $WORKSPACE --branch $BRANCH
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-branch.php --workspace $WORKSPACE --branch $BRANCH"
 
     exit
     ;;
@@ -650,13 +650,13 @@ while :; do
     WORKSPACE=$(get_arg -workspace "$@")
     BRANCH=$(get_arg -branch "$@")
 
-    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
     if [ "$POD" = "" ]; then
       echo "Unable to locate backend pod."
       exit 1
     fi
 
-    FILE=$(kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/export-schema.php --workspace $WORKSPACE --branch $BRANCH)
+    FILE=$(eval "kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/export-schema.php --workspace $WORKSPACE --branch $BRANCH")
     if [[ $FILE != "/tmp/"* ]]; then
       echo "Unable to locate export."
       exit 1
@@ -664,7 +664,7 @@ while :; do
 
     FILENAME=$(basename $FILE)
 
-    kubectl cp $NAMESPACE/$POD:$FILE $FILENAME > /dev/null
+    eval "kubectl cp $NAMESPACE/$POD:$FILE $FILENAME > /dev/null"
 
     if [ ! -f "./$FILENAME" ]; then
       echo "Unable to download export."
@@ -686,13 +686,13 @@ while :; do
     WORKSPACE=$(get_arg -workspace "$@")
     BRANCH=$(get_arg -branch "$@")
 
-    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
     if [ "$POD" = "" ]; then
       echo "Unable to locate backend pod."
       exit 1
     fi
 
-    FILE=$(kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/export-workspace.php --workspace $WORKSPACE --branch $BRANCH)
+    FILE=$(eval "kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/export-workspace.php --workspace $WORKSPACE --branch $BRANCH")
     if [[ $FILE != "/tmp/"* ]]; then
       echo "Unable to locate export."
       exit 1
@@ -700,7 +700,7 @@ while :; do
 
     FILENAME=$(basename $FILE)
 
-    kubectl cp $NAMESPACE/$POD:$FILE $FILENAME > /dev/null
+    eval "kubectl cp $NAMESPACE/$POD:$FILE $FILENAME > /dev/null"
 
     if [ ! -f "./$FILENAME" ]; then
       echo "Unable to download export."
@@ -725,7 +725,7 @@ while :; do
     FILE=$(get_arg -file "$@")
     validate_file $FILE
 
-    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
     if [ "$POD" = "" ]; then
       echo "Unable to locate backend pod."
       exit 1
@@ -735,9 +735,9 @@ while :; do
 
     REMOTE_FILE="/tmp/$FILENAME"
 
-    kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null
+    eval "kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null"
 
-    kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/import-schema.php --workspace $WORKSPACE --newbranch $NEWBRANCH --setlive $SETLIVE --file $REMOTE_FILE
+    eval "kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/import-schema.php --workspace $WORKSPACE --newbranch $NEWBRANCH --setlive $SETLIVE --file $REMOTE_FILE"
 
     exit
     ;;
@@ -753,7 +753,7 @@ while :; do
     FILE=$(get_arg -file "$@")
     validate_file $FILE
 
-    POD=$(kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-)
+    POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
     if [ "$POD" = "" ]; then
       echo "Unable to locate backend pod."
       exit 1
@@ -763,9 +763,9 @@ while :; do
 
     REMOTE_FILE="/tmp/$FILENAME"
 
-    kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null
+    eval "kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null"
 
-    kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/import-workspace.php --workspace $WORKSPACE --file $REMOTE_FILE
+    eval "kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/import-workspace.php --workspace $WORKSPACE --file $REMOTE_FILE"
 
     exit
     ;;
