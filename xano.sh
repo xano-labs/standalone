@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.22
+VERSION=1.0.23
 XANO_PORT=${XANO_PORT:-4201}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -13,7 +13,7 @@ VARS=${XANO_VARS:-settings}
 ACTION="-help"
 VERBOSE="/dev/null"
 XANO_REPO=us-docker.pkg.dev/xano-registry/public/standalone
-XANO_TAG=0.0.49
+XANO_TAG=0.0.381
 
 while :; do
   case $1 in
