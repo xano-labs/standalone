@@ -139,7 +139,7 @@ while :; do
     echo ""
     echo "file created: $name.vars"
     echo ""
-    echo "Continue to step 4 in our getting started guide."
+    echo "Continue to step 3 in our getting started guide."
     echo "https://go.xano.co/standalone-docs"
     echo ""
 
