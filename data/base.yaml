@@ -147,6 +147,24 @@ xano:
               - name: socket
                 containerPort: 3001
                 protocol: TCP
+      deno:
+        name: deno
+        service:
+          name: deno
+          type: ClusterIP
+          ports:
+            - name: deno
+              port: 3004
+              targetPort: 3004
+              protocol: TCP
+          enabled: true
+        replicas: 1
+        containers:
+          deno:
+            ports:
+              - name: deno
+                containerPort: 3004
+                protocol: TCP
       task:
         name: task
         service:
