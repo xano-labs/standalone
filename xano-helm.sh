@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.12
+VERSION=1.0.13
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -235,7 +235,7 @@ package() {
   yq -i '.xano.k8s.deployments.redis.containers.redis.settings = load("'$CFG'").resources.redis.settings' $RESULT
   yq -i '.xano.k8s.deployments.redis.containers.redis.settings.requirepass = load("'$CFG'").redis.credentials.password' $RESULT
 
-  KEYS=("backend" "realtime" "frontend" "node" "task" "redis" "database")
+  KEYS=("backend" "realtime" "frontend" "node" "task" "redis" "database" "deno")
   for KEY in "${KEYS[@]}"
   do
     yq -i '.xano.k8s.deployments.'$KEY'.enabled = load("'$CFG'").resources.'$KEY'.enabled' $RESULT
