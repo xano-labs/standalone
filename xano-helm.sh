@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.13
+VERSION=1.0.14
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -170,6 +170,7 @@ validate_clusterissuer() {
 
   if [ "$RET" != "ClusterIssuer" ]; then
     echo "Invalid cluster issuer"
+    echo "$1"
     exit 1
   fi
 }
@@ -563,16 +564,24 @@ while :; do
     LIC=$(get_arg -lic "$@")
     validate_license "$LIC"
 
+    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    validate_config "$CFG"
+
     LICID=$(get_license $LIC)
     EMAIL=$(get_email $LIC)
+    CLUSTERISSUER=$(get_clusterIssuer $CFG)
 
-    CLUSTER_ISSUER_FILE=$(get_arg -file "$@")
-    validate_file $CLUSTER_ISSUER_FILE
+    CLUSTER_ISSUER_FILE="./data/cluster-issuer.yaml"
+    if [ ! -f "$CLUSTER_ISSUER_FILE" ]; then
+      CLUSTER_ISSUER_FILE="https://raw.githubusercontent.com/xano-labs/standalone/refs/heads/main/$CLUSTER_ISSUER_FILE"
+    fi
 
     DATA=$(get_file $CLUSTER_ISSUER_FILE)
     validate_clusterissuer "$DATA"
 
-    DATA=$(echo "$DATA" | yq '.spec.acme.email = "'$EMAIL'"') # = "'$EMAIL'")
+    DATA=$(echo "$DATA" | yq '.spec.acme.email = "'$EMAIL'"')
+    DATA=$(echo "$DATA" | yq '.metadata.name = "'$CLUSTERISSUER'"')
+    DATA=$(echo "$DATA" | yq '.spec.acme.privateKeySecretRef.name = "'$CLUSTERISSUER'"')
     echo "$DATA" | kubectl apply -f -
 
     exit

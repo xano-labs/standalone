@@ -1,7 +1,7 @@
 apiVersion: cert-manager.io/v1
-kind:   
+kind: ClusterIssuer
 metadata:
-  name: letsencrypt
+  name: REPLACE_ME
 spec:
   acme:
     # The ACME server URL
@@ -10,7 +10,7 @@ spec:
     email: REPLACE_ME
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
-      name: letsencrypt
+      name: REPLACE_ME
     # Enable the HTTP-01 challenge provider
     solvers:
       - http01:
