@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.14
+VERSION=1.0.15
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -25,7 +25,7 @@ check_script helm
 check_script kubectl
 check_script kubectl
 
-get_arg() {
+req_arg() {
   arg=$1
   shift
 
@@ -56,6 +56,36 @@ get_arg() {
 
   echo "Missing param: $arg" >&2
   exit 1
+}
+
+get_arg() {
+  arg=$1
+  shift
+
+  set -e
+
+  while :; do
+    case $1 in
+    "")
+      break
+      ;;
+    "$arg")
+      shift
+
+      if [ "$1" = "" ]; then
+        echo "Missing value for param: $arg" >&2
+        exit 1
+      fi
+
+      printf "%q" "$1"
+
+      set +e
+
+      exit
+      ;;
+    esac
+    shift
+  done
 }
 
 validate() {
@@ -264,7 +294,11 @@ fetch_license() {
     exit 1
   fi
 
-  FILE="./${NAME}-license.yaml"
+  FILE="$2"
+
+  if [ "$FILE" = "" ]; then
+    FILE="./${NAME}-license.yaml"
+  fi
 
   echo "$LIC" > $FILE
 
@@ -332,10 +366,10 @@ while :; do
   package)
     shift
 
-    LIC=$(get_arg -lic "$@")
+    LIC=$(req_arg -lic "$@")
     validate_license "$LIC"
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     package "$LIC" "$CFG"
@@ -346,10 +380,10 @@ while :; do
   deploy)
     shift
 
-    LIC=$(get_arg -lic "$@")
+    LIC=$(req_arg -lic "$@")
     validate_license "$LIC"
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     package "$LIC" "$CFG"
@@ -364,7 +398,7 @@ while :; do
   list-users)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
@@ -376,10 +410,10 @@ while :; do
   get-user)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
-    BY=$(get_arg -by "$@")
+    BY=$(req_arg -by "$@")
 
     FIELD=id
     NAMESPACE=$(get_namespace $CFG)
@@ -395,10 +429,10 @@ while :; do
   del-user)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
-    BY=$(get_arg -by "$@")
+    BY=$(req_arg -by "$@")
 
     FIELD=id
     NAMESPACE=$(get_namespace $CFG)
@@ -414,12 +448,12 @@ while :; do
   add-user)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
-    NAME=$(get_arg -name "$@")
-    EMAIL=$(get_arg -email "$@")
-    PASS=$(get_arg -pass "$@")
+    NAME=$(req_arg -name "$@")
+    EMAIL=$(req_arg -email "$@")
+    PASS=$(req_arg -pass "$@")
 
     NAMESPACE=$(get_namespace $CFG)
 
@@ -430,11 +464,11 @@ while :; do
   set-user-pass)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
-    BY=$(get_arg -by "$@")
-    PASS=$(get_arg -pass "$@")
+    BY=$(req_arg -by "$@")
+    PASS=$(req_arg -pass "$@")
 
     FIELD=id
     NAMESPACE=$(get_namespace $CFG)
@@ -450,7 +484,7 @@ while :; do
   info)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
@@ -474,27 +508,28 @@ while :; do
   get-license)
     shift
 
-    LICID=$(get_arg -key "$@")
+    LICID=$(req_arg -key "$@")
 
     if [[ ! $LICID =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{12}\}?$ ]]; then
       echo "Please enter a valid license id."
       exit
     fi
 
-    fetch_license "$LICID"
+    LIC=$(get_arg -lic "$@")
+    fetch_license "$LICID" "$LIC"
     exit
     ;;
   set-license-release)
     shift
 
-    LICID=$(get_arg -key "$@")
+    LICID=$(req_arg -key "$@")
 
     if [[ ! $LICID =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{12}\}?$ ]]; then
       echo "Please enter a valid license id."
       exit
     fi
 
-    RELEASEID=$(get_arg -release "$@")
+    RELEASEID=$(req_arg -release "$@")
 
     LIC=$(curl -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
     MESSAGE=$(echo "$LIC" | yq -p json .message)
@@ -503,13 +538,14 @@ while :; do
       exit 1
     fi
 
-    fetch_license "$LICID"
+    LIC=$(get_arg -lic "$@")
+    fetch_license "$LICID" "$LIC"
     exit
     ;;
   set-license-to-latest-public)
     shift
 
-    LICID=$(get_arg -key "$@")
+    LICID=$(req_arg -key "$@")
 
     if [[ ! $LICID =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{12}\}?$ ]]; then
       echo "Please enter a valid license id."
@@ -529,13 +565,14 @@ while :; do
       exit 1
     fi
 
-    fetch_license "$LICID"
+    LIC=$(get_arg -lic "$@")
+    fetch_license "$LICID" "$LIC"
     exit
     ;;
   set-license-to-latest-beta)
     shift
 
-    LICID=$(get_arg -key "$@")
+    LICID=$(req_arg -key "$@")
 
     if [[ ! $LICID =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{12}\}?$ ]]; then
       echo "Please enter a valid license id."
@@ -555,16 +592,17 @@ while :; do
       exit 1
     fi
 
-    fetch_license "$LICID"
+    LIC=$(get_arg -lic "$@")
+    fetch_license "$LICID" "$LIC"
     exit
     ;;
   install-cluster-issuer)
     shift
 
-    LIC=$(get_arg -lic "$@")
+    LIC=$(req_arg -lic "$@")
     validate_license "$LIC"
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     LICID=$(get_license $LIC)
@@ -596,7 +634,7 @@ while :; do
   list-workspaces)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
@@ -608,12 +646,12 @@ while :; do
   delete-workspace)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
 
-    WORKSPACE=$(get_arg -workspace "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
 
     eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-workspace.php --workspace $WORKSPACE"
 
@@ -622,12 +660,12 @@ while :; do
   list-branches)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
 
-    WORKSPACE=$(get_arg -workspace "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
 
     eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/list-branches.php --workspace $WORKSPACE"
 
@@ -636,13 +674,13 @@ while :; do
   delete-branch)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
 
-    WORKSPACE=$(get_arg -workspace "$@")
-    BRANCH=$(get_arg -branch "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
+    BRANCH=$(req_arg -branch "$@")
 
     eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/delete-branch.php --workspace $WORKSPACE --branch $BRANCH"
 
@@ -651,13 +689,13 @@ while :; do
   export-schema)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
 
-    WORKSPACE=$(get_arg -workspace "$@")
-    BRANCH=$(get_arg -branch "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
+    BRANCH=$(req_arg -branch "$@")
 
     POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
     if [ "$POD" = "" ]; then
@@ -687,13 +725,13 @@ while :; do
   export-workspace)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
 
-    WORKSPACE=$(get_arg -workspace "$@")
-    BRANCH=$(get_arg -branch "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
+    BRANCH=$(req_arg -branch "$@")
 
     POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
     if [ "$POD" = "" ]; then
@@ -723,15 +761,15 @@ while :; do
   import-schema)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
 
-    WORKSPACE=$(get_arg -workspace "$@")
-    NEWBRANCH=$(get_arg -newbranch "$@")
-    SETLIVE=$(get_arg -setlive "$@")
-    FILE=$(get_arg -file "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
+    NEWBRANCH=$(req_arg -newbranch "$@")
+    SETLIVE=$(req_arg -setlive "$@")
+    FILE=$(req_arg -file "$@")
     validate_file $FILE
 
     POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
@@ -753,13 +791,13 @@ while :; do
   import-workspace)
     shift
 
-    CFG=${XANO_CFG:-$(get_arg -cfg "$@")}
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
     validate_config "$CFG"
 
     NAMESPACE=$(get_namespace $CFG)
 
-    WORKSPACE=$(get_arg -workspace "$@")
-    FILE=$(get_arg -file "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
+    FILE=$(req_arg -file "$@")
     validate_file $FILE
 
     POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
