@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.15
+VERSION=1.0.16
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -458,6 +458,22 @@ while :; do
     NAMESPACE=$(get_namespace $CFG)
 
     eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/add-user.php --name "$NAME" --email $EMAIL --password $PASS"
+
+    exit
+    ;;
+  add-isolated-user)
+    shift
+
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAME=$(req_arg -name "$@")
+    EMAIL=$(req_arg -email "$@")
+    PASS=$(req_arg -pass "$@")
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/add-isolated-user.php --name "$NAME" --email $EMAIL --password $PASS"
 
     exit
     ;;
