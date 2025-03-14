@@ -23,7 +23,6 @@ check_script curl
 check_script yq
 check_script helm
 check_script kubectl
-check_script kubectl
 
 req_arg() {
   arg=$1
