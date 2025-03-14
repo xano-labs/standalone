@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.16
+VERSION=1.0.17
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -497,6 +497,20 @@ while :; do
 
     exit
     ;;
+  add-workspace)
+    shift
+
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAME=$(req_arg -name "$@")
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    eval "kubectl exec deploy/backend -n $NAMESPACE -- php /xano/bin/tools/helm/add-workspace.php --name "$NAME""
+
+    exit
+    ;;
   info)
     shift
 
@@ -854,6 +868,11 @@ help)
   echo "    -name: the name of the user"
   echo "    -email: the email of the user"
   echo "    -pass: the password of the user"
+  echo "  add-isolated-user: create a user, a workspace, and access to only that workspace"
+  echo "    -cfg: the config file of your instance"
+  echo "    -name: the name of the user"
+  echo "    -email: the email of the user"
+  echo "    -pass: the password of the user"
   echo "  get-user: display a single user from your instance"
   echo "    -cfg: the config file of your instance"
   echo "    -by: the id or email of the user"
@@ -864,6 +883,9 @@ help)
   echo "  del-user: delete a user from your instance"
   echo "    -cfg: the config file of your instance"
   echo "    -by: the id or email of the user"
+  echo "  add-workspace: create a workspace"
+  echo "    -cfg: the config file of your instance"
+  echo "    -name: the name of the workspace"
   echo "  public-releases: display the recent public releases"
   echo "  beta-releases: display the recent beta releases"
   echo "  get-license: retrieve your license file bundled with the latest public release"
