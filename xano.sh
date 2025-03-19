@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.0.23
+VERSION=1.0.24
 XANO_PORT=${XANO_PORT:-4201}
 XANO_LICENSE="$XANO_LICENSE"
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -221,6 +221,17 @@ while :; do
       exit 1
     fi
     ;;
+  -replace-schema)
+    ACTION=$1
+    shift
+
+    IMPORT_FILE=$1
+
+    if [ "$IMPORT_FILE" = "" ]; then
+      echo "Missing file"
+      exit 1
+    fi
+    ;;
   -help)
     ACTION=$1
     ;;
@@ -307,6 +318,8 @@ case "$ACTION" in
   echo "    export the database table + branch schema"
   echo " -import-schema [arg:file] [arg:newbranch] [arg:setlive]"
   echo "    import schema into a new branch and optionally set it live"
+  echo " -replace-schema [arg:file]"
+  echo "    replace schema with import - this removes existing branches"
   echo " -reset"
   echo "    reset workspace"
   echo " -info"
@@ -507,6 +520,22 @@ case "$ACTION" in
     exec \
     $CONTAINER \
     php /xano/bin/tools/standalone/import-schema.php --file /tmp/import.tar.gz --newbranch "$IMPORT_BRANCH" --setlive "$IMPORT_SETLIVE"
+  exit
+  ;;
+-replace-schema)
+  ret=$(docker container inspect $CONTAINER 2>&1 >/dev/null)
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    echo "not running"
+    exit 1
+  fi
+
+  docker cp $(realpath $IMPORT_FILE) $CONTAINER:/tmp/import.tar.gz > /dev/null
+
+  docker \
+    exec \
+    $CONTAINER \
+    php /xano/bin/tools/standalone/replace-schema.php --file /tmp/import.tar.gz
   exit
   ;;
 -reset)

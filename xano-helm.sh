@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.17
+VERSION=1.0.18
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -817,6 +817,34 @@ while :; do
 
     exit
     ;;
+  replace-schema)
+    shift
+
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(req_arg -workspace "$@")
+    FILE=$(req_arg -file "$@")
+    validate_file $FILE
+
+    POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
+    if [ "$POD" = "" ]; then
+      echo "Unable to locate backend pod."
+      exit 1
+    fi
+
+    FILENAME=$(basename $FILE)
+
+    REMOTE_FILE="/tmp/$FILENAME"
+
+    eval "kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null"
+
+    eval "kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/replace-schema.php --workspace $WORKSPACE --file $REMOTE_FILE"
+
+    exit
+    ;;
   import-workspace)
     shift
 
@@ -925,6 +953,10 @@ help)
   echo "    -workspace: the workspace id"
   echo "    -branch: the branch label"
   echo "    -setlive: whether to set the new branch live"
+  echo "  replace-schema: replace schema with import - this removes existing branches"
+  echo "    -cfg: the config file of your instance"
+  echo "    -file: the schema archive"
+  echo "    -workspace: the workspace id"
   echo "  import-workspace: replace the existing workspace with the new import"
   echo "    -cfg: the config file of your instance"
   echo "    -file: the workspace archive"
