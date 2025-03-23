@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.19
+VERSION=1.0.20
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -742,6 +742,48 @@ while :; do
 
     exit
     ;;
+  export-table-content)
+    shift
+
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(req_arg -workspace "$@")
+    TABLE=$(req_arg -table "$@")
+
+    DATASOURCE=$(get_arg -datasource "$@" "-datasource" "live")
+    CSV_DELIMITER=$(get_arg -csv_delimiter "$@" "-csv_delimiter" ",")
+    CSV_ENCLOSURE=$(get_arg -csv_enclosure "$@" "-csv_enclosure" '"')
+    CSV_ESCAPE=$(get_arg -csv_escape "$@" "-csv_escape" '"')
+
+    POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
+    if [ "$POD" = "" ]; then
+      echo "Unable to locate backend pod."
+      exit 1
+    fi
+
+    FILE=$(eval "kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/export-table-content.php --workspace $WORKSPACE --table $TABLE --datasource $DATASOURCE --csv_delimiter $CSV_DELIMITER --csv_enclosure $CSV_ENCLOSURE --csv_escape $CSV_ESCAPE")
+
+    if [[ $FILE != "/tmp/"* ]]; then
+      echo "Unable to locate export."
+      exit 1
+    fi
+
+    FILENAME=$(basename $FILE)
+
+    eval "kubectl cp $NAMESPACE/$POD:$FILE $FILENAME > /dev/null"
+
+    if [ ! -f "./$FILENAME" ]; then
+      echo "Unable to download export."
+      exit 1
+    fi
+
+    echo "Exported to: $FILENAME"
+
+    exit
+    ;;
   export-schema)
     shift
 
@@ -811,6 +853,44 @@ while :; do
     fi
 
     echo "Exported to: $FILENAME"
+
+    exit
+    ;;
+  import-table-content)
+    shift
+
+    CFG=${XANO_CFG:-$(req_arg -cfg "$@")}
+    validate_config "$CFG"
+
+    NAMESPACE=$(get_namespace $CFG)
+
+    WORKSPACE=$(req_arg -workspace "$@")
+    WORKSPACE=$(req_arg -workspace "$@")
+    TABLE=$(req_arg -table "$@")
+
+    DATASOURCE=$(get_arg -datasource "$@" "-datasource" "live")
+    CSV_DELIMITER=$(get_arg -csv_delimiter "$@" "-csv_delimiter" ",")
+    CSV_ENCLOSURE=$(get_arg -csv_enclosure "$@" "-csv_enclosure" '"')
+    CSV_ESCAPE=$(get_arg -csv_escape "$@" "-csv_escape" '"')
+    SKIP_TRIGGERS=$(get_arg -skip_triggers "$@" "-skip_triggers" "true")
+    TRUNCATE=$(get_arg -truncate "$@" "-truncate" "false")
+
+    FILE=$(req_arg -file "$@")
+    validate_file $FILE
+
+    POD=$(eval "kubectl get pod -o name -n $NAMESPACE -l app.kubernetes.io/name=backend | head -n 1 | cut -c 5-")
+    if [ "$POD" = "" ]; then
+      echo "Unable to locate backend pod."
+      exit 1
+    fi
+
+    FILENAME=$(basename $FILE)
+
+    REMOTE_FILE="/tmp/$FILENAME"
+
+    eval "kubectl cp $FILE $NAMESPACE/$POD:$REMOTE_FILE > /dev/null"
+
+    eval "kubectl exec pod/$POD -n $NAMESPACE -- php /xano/bin/tools/helm/import-table-content.php --workspace $WORKSPACE --table $TABLE --datasource $DATASOURCE --csv_delimiter $CSV_DELIMITER --csv_enclosure $CSV_ENCLOSURE --csv_escape $CSV_ESCAPE --file $REMOTE_FILE --skip_triggers $SKIP_TRIGGERS --truncate $TRUNCATE"
 
     exit
     ;;
@@ -968,6 +1048,14 @@ help)
   echo "    -cfg: the config file of your instance"
   echo "    -workspace: the workspace id"
   echo "    -branch: the branch label"
+  echo "  export-table-content: export the content of a database table as a csv file"
+  echo "    -cfg: the config file of your instance"
+  echo "    -workspace: the workspace id"
+  echo "    -table: the database table name"
+  echo "    -datasource?=live: the datasource"
+  echo "    -csv_delimiter?=',': the csv_delimiter"
+  echo "    -csv_enclosure?='\"': the csv_enclosure"
+  echo "    -csv_escape?='\"': the csv_escape"
   echo "  export-schema: export the database table + branch schema"
   echo "    -cfg: the config file of your instance"
   echo "    -workspace: the workspace id"
@@ -976,6 +1064,17 @@ help)
   echo "    -cfg: the config file of your instance"
   echo "    -workspace: the workspace id"
   echo "    -branch: the branch label"
+  echo "  import-table-content: import table records from a csv file into an existing table"
+  echo "    -cfg: the config file of your instance"
+  echo "    -workspace: the workspace id"
+  echo "    -table: the database table name"
+  echo "    -file: the table csv file"
+  echo "    -datasource?=live: the datasource"
+  echo "    -csv_delimiter?=',': the csv_delimiter"
+  echo "    -csv_enclosure?='\"': the csv_enclosure"
+  echo "    -csv_escape?='\"': the csv_escape"
+  echo "    -skip_triggers?=true: ignore triggers during import"
+  echo "    -truncate?=false': truncate the existing table before import"
   echo "  import-schema: import schema into a new branch and optionally set it live"
   echo "    -cfg: the config file of your instance"
   echo "    -file: the schema archive"
