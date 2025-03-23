@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.18
+VERSION=1.0.19
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -610,7 +610,34 @@ while :; do
 
     RELEASEID=$(curl "$XANO_ORIGIN/api:license/beta/releases" 2>/dev/null | yq '.items.[0].id')
     if [ "$RELEASEID" = "null" ] || [ "$RELEASEID" = "" ]; then
-      echo "Unable to retrieve latest public release."
+      echo "Unable to retrieve latest beta release."
+      exit 1
+    fi
+
+    LIC=$(curl -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
+    MESSAGE=$(echo "$LIC" | yq -p json .message)
+    if [ "$MESSAGE" != "null" ]; then
+      echo "ERROR: $MESSAGE"
+      exit 1
+    fi
+
+    LIC=$(get_arg -lic "$@")
+    fetch_license "$LICID" "$LIC"
+    exit
+    ;;
+  set-license-to-latest-alpha)
+    shift
+
+    LICID=$(req_arg -key "$@")
+
+    if [[ ! $LICID =~ ^\{?[A-F0-9a-f]{8}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{4}-[A-F0-9a-f]{12}\}?$ ]]; then
+      echo "Please enter a valid license id."
+      exit
+    fi
+
+    RELEASEID=$(curl "$XANO_ORIGIN/api:license/alpha/releases" 2>/dev/null | yq '.items.[0].id')
+    if [ "$RELEASEID" = "null" ] || [ "$RELEASEID" = "" ]; then
+      echo "Unable to retrieve latest alpha release."
       exit 1
     fi
 
@@ -923,6 +950,8 @@ help)
   echo "  set-license-to-latest-public: bind the latest public release to your license"
   echo "    -lic: the file name of your license"
   echo "  set-license-to-latest-beta: bind the latest beta release to your license"
+  echo "    -lic: the file name of your license"
+  echo "  set-license-to-latest-alpha: bind the latest alpha release to your license"
   echo "    -lic: the file name of your license"
   echo "  version: display the version of this shell script"
   echo "  info: get details about the deployed license"
