@@ -865,7 +865,6 @@ while :; do
     NAMESPACE=$(get_namespace $CFG)
 
     WORKSPACE=$(req_arg -workspace "$@")
-    WORKSPACE=$(req_arg -workspace "$@")
     TABLE=$(req_arg -table "$@")
 
     DATASOURCE=$(get_arg -datasource "$@" "-datasource" "live")
