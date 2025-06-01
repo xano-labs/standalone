@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.20
+VERSION=1.0.21
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -269,6 +269,9 @@ package() {
   for KEY in "${KEYS[@]}"
   do
     yq -i '.xano.k8s.deployments.'$KEY'.enabled = load("'$CFG'").resources.'$KEY'.enabled' $RESULT
+    if [ "$(yq .resources.$KEY.castai $CFG)" = true ]; then
+      yq -i '.xano.k8s.deployments.'$KEY'.castai = load("'$CFG'").resources.'$KEY'.castai' $RESULT
+    fi
     yq -i '.xano.k8s.deployments.'$KEY'.containers.'$KEY'.resources.limits = (load("'$CFG'").resources.'$KEY'.limits | with_entries(select(.key == "cpu" or .key == "memory")) )' $RESULT
     yq -i '.xano.k8s.deployments.'$KEY'.containers.'$KEY'.resources.requests = (load("'$CFG'").resources.'$KEY'.requests | with_entries(select(.key == "cpu" or .key == "memory")) )' $RESULT
 

@@ -2,7 +2,7 @@ ingress:
   nginx:
     deployment:
       - name: backend
-        path: "/(api.*|vault.*|swagger.*|oauth.*)"
+        path: "/(api.*|tenant.*|vault.*|swagger.*|oauth.*)"
         port: 80
       - name: node
         path: /(socket/.*)
@@ -23,6 +23,9 @@ ingress:
     deployment:
       - name: backend
         path: /api*
+        port: 80
+      - name: backend
+        path: /tenant*
         port: 80
       - name: backend
         path: /vault*
@@ -49,6 +52,9 @@ ingress:
     deployment:
       - name: backend
         path: /api*
+        port: 80
+      - name: backend
+        path: /tenant*
         port: 80
       - name: backend
         path: /vault*
