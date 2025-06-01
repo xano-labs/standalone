@@ -269,7 +269,7 @@ package() {
   for KEY in "${KEYS[@]}"
   do
     yq -i '.xano.k8s.deployments.'$KEY'.enabled = load("'$CFG'").resources.'$KEY'.enabled' $RESULT
-    if [ "$(yq .resources.$KEY.castai $CFG)" = true ]; then
+    if [ "$(yq .resources.$KEY.castai $CFG)" = "true" ]; then
       yq -i '.xano.k8s.deployments.'$KEY'.castai = load("'$CFG'").resources.'$KEY'.castai' $RESULT
     fi
     yq -i '.xano.k8s.deployments.'$KEY'.containers.'$KEY'.resources.limits = (load("'$CFG'").resources.'$KEY'.limits | with_entries(select(.key == "cpu" or .key == "memory")) )' $RESULT
