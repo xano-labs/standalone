@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.22
+VERSION=1.0.23
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -21,6 +21,7 @@ check_script() {
 
 check_script curl
 check_script yq
+check_script jq
 check_script helm
 check_script kubectl
 
@@ -330,7 +331,7 @@ package_with_license() {
 
   LICDATA=$(curl -k -G "${ORIGIN}/api:master/license/${LICENSE}" -d "release_id=${RELEASE}" 2>/dev/null)
 
-  MESSAGE=$(echo "$LICDATA" | yq -p json .message)
+  MESSAGE=$(echo "$LICDATA" | jq -r .message)
   if [ "$MESSAGE" != "null" ]; then
     echo "ERROR: $MESSAGE"
     exit 1
@@ -564,7 +565,7 @@ while :; do
     RELEASEID=$(req_arg -release "$@")
 
     LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
-    MESSAGE=$(echo "$LIC" | yq -p json .message)
+    MESSAGE=$(echo "$LIC" | jq -r .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
       exit 1
@@ -591,7 +592,7 @@ while :; do
     fi
 
     LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
-    MESSAGE=$(echo "$LIC" | yq -p json .message)
+    MESSAGE=$(echo "$LIC" | jq -r .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
       exit 1
@@ -618,7 +619,7 @@ while :; do
     fi
 
     LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
-    MESSAGE=$(echo "$LIC" | yq -p json .message)
+    MESSAGE=$(echo "$LIC" | jq -r .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
       exit 1
@@ -645,7 +646,7 @@ while :; do
     fi
 
     LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
-    MESSAGE=$(echo "$LIC" | yq -p json .message)
+    MESSAGE=$(echo "$LIC" | jq -r .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
       exit 1
