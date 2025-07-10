@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.21
+VERSION=1.0.22
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -152,7 +152,7 @@ get_file() {
     cat "$1"
   else
     if [[ $1 == "http://"* ]] || [[ $1 == "https://"* ]]; then
-      RET=$(curl --fail "$1" 2>/dev/null)
+      RET=$(curl -k --fail "$1" 2>/dev/null)
       if [ "$RET" = "" ]; then
         echo "Unable to download: $1" >&2
         exit 1
@@ -288,7 +288,7 @@ package() {
 fetch_license() {
   LICID=$1
 
-  LIC=$(curl "$XANO_ORIGIN/api:license/license/$LICID" 2>/dev/null)
+  LIC=$(curl -k "$XANO_ORIGIN/api:license/license/$LICID" 2>/dev/null)
   NAME=$(echo "$LIC" | yq .license.name 2>/dev/null)
 
   if [ "$NAME" = "" ] || [ "$NAME" = "null" ]; then
@@ -328,7 +328,7 @@ package_with_license() {
     exit 1
   fi
 
-  LICDATA=$(curl -G "${ORIGIN}/api:master/license/${LICENSE}" -d "release_id=${RELEASE}" 2>/dev/null)
+  LICDATA=$(curl -k -G "${ORIGIN}/api:master/license/${LICENSE}" -d "release_id=${RELEASE}" 2>/dev/null)
 
   MESSAGE=$(echo "$LICDATA" | yq -p json .message)
   if [ "$MESSAGE" != "null" ]; then
@@ -526,13 +526,13 @@ while :; do
     exit
     ;;
   public-releases)
-    RELEASES=$(curl "$XANO_ORIGIN/api:license/public/releases" 2>/dev/null)
+    RELEASES=$(curl -k "$XANO_ORIGIN/api:license/public/releases" 2>/dev/null)
 
     echo "$RELEASES" | yq -P -o json '.items'
     exit
     ;;
   beta-releases)
-    RELEASES=$(curl "$XANO_ORIGIN/api:license/beta/releases" 2>/dev/null)
+    RELEASES=$(curl -k "$XANO_ORIGIN/api:license/beta/releases" 2>/dev/null)
 
     echo "$RELEASES" | yq -P -o json '.items'
     exit
@@ -563,7 +563,7 @@ while :; do
 
     RELEASEID=$(req_arg -release "$@")
 
-    LIC=$(curl -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
+    LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
     MESSAGE=$(echo "$LIC" | yq -p json .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
@@ -584,13 +584,13 @@ while :; do
       exit
     fi
 
-    RELEASEID=$(curl "$XANO_ORIGIN/api:license/public/releases" 2>/dev/null | yq '.items.[0].id')
+    RELEASEID=$(curl -k "$XANO_ORIGIN/api:license/public/releases" 2>/dev/null | yq '.items.[0].id')
     if [ "$RELEASEID" = "null" ] || [ "$RELEASEID" = "" ]; then
       echo "Unable to retrieve latest public release."
       exit 1
     fi
 
-    LIC=$(curl -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
+    LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
     MESSAGE=$(echo "$LIC" | yq -p json .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
@@ -611,13 +611,13 @@ while :; do
       exit
     fi
 
-    RELEASEID=$(curl "$XANO_ORIGIN/api:license/beta/releases" 2>/dev/null | yq '.items.[0].id')
+    RELEASEID=$(curl -k "$XANO_ORIGIN/api:license/beta/releases" 2>/dev/null | yq '.items.[0].id')
     if [ "$RELEASEID" = "null" ] || [ "$RELEASEID" = "" ]; then
       echo "Unable to retrieve latest beta release."
       exit 1
     fi
 
-    LIC=$(curl -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
+    LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
     MESSAGE=$(echo "$LIC" | yq -p json .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
@@ -638,13 +638,13 @@ while :; do
       exit
     fi
 
-    RELEASEID=$(curl "$XANO_ORIGIN/api:license/alpha/releases" 2>/dev/null | yq '.items.[0].id')
+    RELEASEID=$(curl -k "$XANO_ORIGIN/api:license/alpha/releases" 2>/dev/null | yq '.items.[0].id')
     if [ "$RELEASEID" = "null" ] || [ "$RELEASEID" = "" ]; then
       echo "Unable to retrieve latest alpha release."
       exit 1
     fi
 
-    LIC=$(curl -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
+    LIC=$(curl -k -X PUT "$XANO_ORIGIN/api:license/license/$LICID/release/$RELEASEID" 2>/dev/null)
     MESSAGE=$(echo "$LIC" | yq -p json .message)
     if [ "$MESSAGE" != "null" ]; then
       echo "ERROR: $MESSAGE"
