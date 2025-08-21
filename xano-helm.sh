@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.23
+VERSION=1.0.24
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -238,6 +238,7 @@ package() {
 
   yq -i '.xano.db = load("'$CFG'").database.credentials' $RESULT
   yq -i '.xano.redis = load("'$CFG'").redis.credentials' $RESULT
+  yq -i '.xano.async = load("'$CFG'").async' $RESULT
   yq -i '.xano.k8s.namespace.name = load("'$CFG'").k8s.namespace' $RESULT
   yq -i '.xano.k8s.limit.database = load("'$CFG'").database.settings' $RESULT
   yq -i '.xano.k8s.limit.apc = load("'$CFG'").apc' $RESULT
