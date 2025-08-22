@@ -285,6 +285,7 @@ package() {
   done
 
   yq -i '.xano *= load("'$LIC'")' $RESULT
+  yq -i '.xano_raw *= load("'$LIC'")' $RESULT
 }
 
 fetch_license() {
