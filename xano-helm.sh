@@ -264,10 +264,6 @@ package() {
   yq -i '.xano.k8s.ingress.type = "'$INGRESS_TYPE'"' $RESULT
   yq -i ".xano.k8s.ingress.deployment = $DEPLOYMENT" $RESULT
 
-  if [ "$(yq .resources.$KEY.castai $CFG)" = "true" ]; then
-    yq -i '.xano.k8s.deployments.'$KEY'.castai = load("'$CFG'").resources.'$KEY'.castai' $RESULT
-  fi
-
   yq -i '.xano.k8s.deployments.redis.storage.class = load("'$CFG'").k8s.storageClass' $RESULT
   yq -i '.xano.k8s.deployments.database.storage.class = load("'$CFG'").k8s.storageClass' $RESULT
   yq -i '.xano.blob.url.origin = "https://" + load("'$CFG'").host' $RESULT
