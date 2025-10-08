@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.24
+VERSION=1.0.25
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -228,10 +228,14 @@ package() {
   yq -i '.xano.db = load("'$CFG'").database.credentials' $RESULT
 
   INGRESS_TYPE=$(yq .k8s.ingressType $CFG)
-
   if [ "$INGRESS_TYPE" = "null" ]; then
     echo "Missing ingressType."
     exit 1
+  fi
+
+  INGRESS_TLS_SECRET=$(yq .k8s.ingressTlsSecret $CFG)
+  if [ "$INGRESS_TLS_SECRET" = "null" || "$INGRESS_TLS_SECRET" = "" ]; then
+    INGRESS_TLS_SECRET="ingress-tls"
   fi
 
   DEPLOYMENT=$(echo "$EXTRAS_DATA" | yq '.ingress["'$INGRESS_TYPE'"].deployment' -o j)
@@ -252,12 +256,17 @@ package() {
   yq -i '.xano.auth.secret.k = load("'$CFG'").auth.secret' $RESULT
   yq -i '.xano.auth.entraid = load("'$CFG'").auth.entraid' $RESULT
   yq -i '.xano.k8s.ingress.primary.tls.host = load("'$CFG'").host' $RESULT
+  yq -i '.xano.k8s.ingress.primary.tls.secret = "'$INGRESS_TLS_SECRET'"' $RESULT
   yq -i '.xano.k8s.ingress.primary.host = load("'$CFG'").host' $RESULT
   yq -i '.xano.k8s.ingress.primary.clusterIssuer = load("'$CFG'").k8s.clusterIssuer' $RESULT
   yq -i '.xano.k8s.ingress.class = load("'$CFG'").k8s.ingressClass' $RESULT
   yq -i '.xano.k8s.ingress.annotations = load("'$CFG'").k8s.ingressAnnotations' $RESULT
   yq -i '.xano.k8s.ingress.type = "'$INGRESS_TYPE'"' $RESULT
   yq -i ".xano.k8s.ingress.deployment = $DEPLOYMENT" $RESULT
+
+  if [ "$(yq .resources.$KEY.castai $CFG)" = "true" ]; then
+    yq -i '.xano.k8s.deployments.'$KEY'.castai = load("'$CFG'").resources.'$KEY'.castai' $RESULT
+  fi
 
   yq -i '.xano.k8s.deployments.redis.storage.class = load("'$CFG'").k8s.storageClass' $RESULT
   yq -i '.xano.k8s.deployments.database.storage.class = load("'$CFG'").k8s.storageClass' $RESULT
