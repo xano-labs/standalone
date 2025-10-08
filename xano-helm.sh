@@ -234,7 +234,7 @@ package() {
   fi
 
   INGRESS_TLS_SECRET=$(yq .k8s.ingressTlsSecret $CFG)
-  if [ "$INGRESS_TLS_SECRET" = "null" || "$INGRESS_TLS_SECRET" = "" ]; then
+  if [ "$INGRESS_TLS_SECRET" = "null" ] || [ "$INGRESS_TLS_SECRET" = "" ]; then
     INGRESS_TLS_SECRET="ingress-tls"
   fi
 
