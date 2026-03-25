@@ -287,6 +287,10 @@ package() {
     else
       yq -i '.xano.k8s.deployments.'$KEY'.hpa = ({"enabled":false,"name":"'$KEY'"})' $RESULT
     fi
+
+    if [ "$(yq .resources.$KEY.storage $CFG)" != "null" ]; then
+      yq -i '.xano.k8s.deployments.'$KEY'.storage.size = load("'$CFG'").resources.'$KEY'.storage' $RESULT
+    fi
   done
 
   yq -i '.xano *= load("'$LIC'")' $RESULT
