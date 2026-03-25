@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.25
+VERSION=1.0.26
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
