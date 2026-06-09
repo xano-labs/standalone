@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.26
+VERSION=1.0.27
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -289,7 +289,7 @@ package() {
     fi
 
     if [ "$(yq .resources.$KEY.storage $CFG)" != "null" ]; then
-      yq -i '.xano.k8s.deployments.'$KEY'.storage.size = load("'$CFG'").resources.'$KEY'.storage' $RESULT
+      yq -i '.xano.k8s.deployments.'$KEY'.storage.resources.requests.storage = load("'$CFG'").resources.'$KEY'.storage' $RESULT
     fi
   done
 
