@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.27
+VERSION=1.0.28
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -193,6 +193,29 @@ validate_config() {
     echo "Invalid config file"
     exit 1
   fi
+
+  validate_maxmemory_policy "$1"
+}
+
+# resources.redis.settings is copied verbatim into the rendered redis.conf, so an
+# unrecognized value breaks redis startup and a multi-line one would inject
+# arbitrary directives. Restrict it to the policies redis actually accepts.
+validate_maxmemory_policy() {
+  RET=$(yq ".resources.redis.settings.maxmemoryPolicy" $1)
+
+  if [ "$RET" = "null" ] || [ "$RET" = "" ]; then
+    return
+  fi
+
+  case "$RET" in
+    noeviction|allkeys-lru|allkeys-lfu|allkeys-random|volatile-lru|volatile-lfu|volatile-random|volatile-ttl)
+      ;;
+    *)
+      echo "Invalid resources.redis.settings.maxmemoryPolicy: $RET"
+      echo "Expected one of: noeviction, allkeys-lru, allkeys-lfu, allkeys-random, volatile-lru, volatile-lfu, volatile-random, volatile-ttl"
+      exit 1
+      ;;
+  esac
 }
 
 validate_clusterissuer() {
