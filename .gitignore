@@ -2,6 +2,7 @@
 /*.yaml
 /*.gz
 cloud/*
+.worktrees/
 
 # System Files
 .DS_Store
