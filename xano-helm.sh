@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=1.0.28
+VERSION=1.0.29
 ACTION="help"
 HELM_RELEASE=xano-instance
 XANO_ORIGIN=${XANO_ORIGIN:-https://app.xano.com}
@@ -294,6 +294,36 @@ package() {
 
   yq -i '.xano.k8s.deployments.redis.containers.redis.settings = load("'$CFG'").resources.redis.settings' $RESULT
   yq -i '.xano.k8s.deployments.redis.containers.redis.settings.requirepass = load("'$CFG'").redis.credentials.password' $RESULT
+
+  # Backend runtime: OpenSwoole instead of php-fpm. Supplied by the CUSTOMER,
+  # because $CFG is the file they own - the license ($LIC) is ours, so it cannot
+  # be a self-hosted operator's lever for a choice about their own cluster.
+  #
+  # `swoole.enabled` is deliberately the OVERRIDE spelling rather than
+  # `k8s.extras.swoole`: cloud-client resolves the runtime as "an explicitly
+  # present swoole.enabled decides, otherwise the k8s.extras.swoole base", and
+  # helm's xano.swooleEnabled helper reads the same key. data/base.yaml carries no
+  # swoole extra, so the base is absent and this value simply decides.
+  # `swoole.task` (the task-coroutine opt-out, default on) rides the same block.
+  #
+  # With no swoolews deployment in data/base.yaml this yields the UNIFIED shape -
+  # one process serving HTTP and the realtime WebSocket frames on one port.
+  # NOTE: data/extras.yaml declares no /ws/ ingress route, so realtime v2 is not
+  # reachable on standalone yet even with this on. The API tier, task coroutines
+  # and in-process async all work; only the WebSocket surface needs that route.
+  #
+  # GUARDED, and the guard tests BLANK as well as absent. yq skips an assignment
+  # whose right side is a MISSING key, so an unguarded write is already a no-op
+  # for an operator who omits the block - but `swoole:` present-and-empty yields
+  # an explicit null that WOULD be written, clobbering the block. Measured on yq
+  # v4.45.1: an absent key prints "null" while a blank one prints the empty
+  # string, which is why both are tested (the same pair as INGRESS_TLS_SECRET
+  # above). Treating blank as absent also matches how the backend reads these
+  # keys, where a blank means "not set" rather than false.
+  SWOOLE_CFG=$(yq .swoole $CFG)
+  if [ "$SWOOLE_CFG" != "null" ] && [ "$SWOOLE_CFG" != "" ]; then
+    yq -i '.xano.swoole = load("'$CFG'").swoole' $RESULT
+  fi
 
   KEYS=("backend" "realtime" "frontend" "node" "task" "redis" "database" "deno")
   for KEY in "${KEYS[@]}"

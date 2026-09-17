@@ -13,6 +13,15 @@ ingress:
       - name: realtime
         path: /(x2/mcp/.*)
         port: 3002
+      # Realtime v2 WebSocket frames, served by the unified Swoole backend
+      # (base.yaml declares no swoolews deployment, so HTTP and WS share one
+      # process on one port). The capture group is INSIDE /ws/ so the
+      # rewrite-target /$1 hands the tier the bare connection hash. Ordered
+      # ahead of the frontend catch-all below: these are nginx regex locations
+      # evaluated in LISTED order, first match wins, so /(.*) would swallow it.
+      - name: backend
+        path: /ws/(.*)
+        port: 80
       - name: frontend
         path: /_frontend/(.*)
         port: 80
@@ -45,6 +54,13 @@ ingress:
       - name: realtime
         path: /x2/mcp/*
         port: 3002
+      # Realtime v2 WebSocket frames (unified Swoole backend). No rewrite here,
+      # so the tier receives /ws/{hash} intact; connectionHashFromUri strips the
+      # ws/ prefix itself, so the prefixed and bare forms both resolve. Ordered
+      # ahead of the frontend root path below.
+      - name: backend
+        path: /ws/*
+        port: 80
       - name: frontend
         path: /
         port: 80
@@ -74,6 +90,12 @@ ingress:
       - name: realtime
         path: /x2/mcp/*
         port: 3002
+      # Realtime v2 WebSocket frames (unified Swoole backend). As with the
+      # gateway above, no rewrite: the tier strips the ws/ prefix itself.
+      # Ordered ahead of the frontend catch-all below.
+      - name: backend
+        path: /ws/*
+        port: 80
       - name: frontend
         path: /*
         port: 80
