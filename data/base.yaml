@@ -76,7 +76,7 @@ xano:
       deployment: []
       ip_denylist: []
       ip_allowlist: []
-      serverSnippet: "more_set_headers \"Strict-Transport-Security: max-age=31536000; includeSubDomains; \";\nrewrite ^/admin/(.*)$   /$1 redirect; server_tokens off;\nlocation ~* \"^/api:mvp-internal\" {deny all; return 403;}"
+      serverSnippet: "more_set_headers \"Strict-Transport-Security: max-age=31536000; includeSubDomains; \";\nrewrite ^/admin/(.*)$   /$1 redirect; server_tokens off;\nlocation ~* \"^(/tenant/[^/]+)?/api[:-]mvp-internal\" {deny all; return 403;}"
       clientMaxBodySize: 64M
     secrets:
       xano:
